@@ -1,15 +1,17 @@
 // ==========================================
 // グローバル変数・状態管理
 // ==========================================
-let totalQuestions = 12; // 全12問
-let currentQuestionIndex = 0; // 0 ~ 11
+let totalQuestions = 12;
+let currentQuestionIndex = 0;
 let correctStageCount = 0;
 
-// アカウント/端末管理
-let currentAccountName = "OPERATOR-01";
+// 端末／持ち主識別用ID
+let deviceId = "DEV-" + Math.floor(Math.random() * 8999 + 1000);
+let currentOwnerName = "未設定";
 let gameStartTime = null;
 let timerInterval = null;
 let elapsedTimeSec = 0;
+let heartbeatInterval = null;
 
 // 背景パーティクル
 const canvas = document.getElementById('matrix-bg');
@@ -17,11 +19,11 @@ const ctx = canvas.getContext('2d');
 let particles = [];
 const particleCount = 40;
 
-// ステージ進行順序 (各ステージ3回ずつ＝計12問)
+// ステージ進行順序 (各3回ずつ＝計12問)
 const stageOrder = [1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4];
 
 // ==========================================
-// 背景パーティクル（赤系統一）
+// 背景パーティクル
 // ==========================================
 function initCanvas() {
     canvas.width = window.innerWidth;
@@ -61,10 +63,11 @@ window.addEventListener('resize', initCanvas);
 window.addEventListener('DOMContentLoaded', () => {
     initCanvas();
     drawParticles();
+    startHeartbeat();
 });
 
 // ==========================================
-// 画面切り替え & 全画面フィードバック（0.3秒待機＋フェードイン）
+// 画面切り替え & 全画面フィードバック (0.3秒待機+フェードイン)
 // ==========================================
 function showScreen(screenId) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -73,7 +76,6 @@ function showScreen(screenId) {
 }
 
 function showFeedback(isSuccess, detailText, callback) {
-    // 0.3秒間溜めてから、なめらかにフェードイン
     setTimeout(() => {
         const overlay = document.getElementById('feedback-overlay');
         const textElem = document.getElementById('feedback-text');
@@ -83,40 +85,41 @@ function showFeedback(isSuccess, detailText, callback) {
         textElem.innerText = isSuccess ? '成功' : '失敗';
         subElem.innerText = detailText || (isSuccess ? 'STAGE CLEAR' : 'STAGE FAILED');
 
-        // フェードイン適用
         overlay.classList.add('show');
 
-        // 表示後1.2秒でフェードアウトして次へ
         setTimeout(() => {
             overlay.classList.remove('show');
             setTimeout(() => {
                 if (callback) callback();
-            }, 400); // フェードアウト待ち時間
+            }, 400);
         }, 1200);
 
     }, 300);
 }
 
 // ==========================================
-// ゲーム制御 & タイマー処理
+// モード選択 & ゲーム制御
 // ==========================================
-function startGame() {
+function goToModeSelection() {
     const inputVal = document.getElementById('account-name-input').value.trim();
-    if (inputVal !== "") {
-        currentAccountName = inputVal;
-    } else {
-        currentAccountName = "OPERATOR-" + Math.floor(Math.random() * 89 + 10);
-    }
+    currentOwnerName = inputVal !== "" ? inputVal : "OPERATOR-01";
+    showScreen('screen-mode-select');
+}
 
+function openAdminFromStart() {
+    showAdminScreen();
+}
+
+function startGame() {
     currentQuestionIndex = 0;
     correctStageCount = 0;
     elapsedTimeSec = 0;
 
-    // リアルタイムタイマー開始
     if (timerInterval) clearInterval(timerInterval);
     gameStartTime = Date.now();
     timerInterval = setInterval(() => {
         elapsedTimeSec = Math.floor((Date.now() - gameStartTime) / 1000);
+        updateDeviceState();
     }, 1000);
 
     updateStageCounter();
@@ -158,7 +161,7 @@ function formatTimer(totalSec) {
 }
 
 // ==========================================
-// STAGE 1: ボタン順番記憶（提示 ➔ 入力）
+// STAGE 1: ボタン順番記憶（5ステップ）
 // ==========================================
 let stage1Sequence = [];
 let stage1UserInputs = [];
@@ -172,9 +175,8 @@ function initStage1() {
     stage1UserInputs = [];
     isStage1AcceptingInput = false;
 
-    instruction.innerText = "光るボタンの順番を記憶せよ";
+    instruction.innerText = "光るボタンの順番を記憶せよ（5回）";
 
-    // BUTTON 1〜4 を作成
     for (let i = 0; i < 4; i++) {
         const btn = document.createElement('button');
         btn.className = 'reboot-node';
@@ -184,13 +186,12 @@ function initStage1() {
         grid.appendChild(btn);
     }
 
-    // ランダムに3つのボタンの順番を作成
-    while (stage1Sequence.length < 3) {
+    // 5ステップの順番を作成
+    while (stage1Sequence.length < 5) {
         const randomIndex = Math.floor(Math.random() * 4);
         stage1Sequence.push(randomIndex);
     }
 
-    // 最初に見本を順に点灯させる
     setTimeout(() => {
         playStage1Sequence(0);
     }, 600);
@@ -208,8 +209,8 @@ function playStage1Sequence(stepIndex) {
             nodes[nodeIndex].classList.remove('lit');
             setTimeout(() => {
                 playStage1Sequence(stepIndex + 1);
-            }, 300);
-        }, 600);
+            }, 250);
+        }, 500);
     } else {
         instruction.innerText = "記憶した順番通りにボタンを押せ！";
         isStage1AcceptingInput = true;
@@ -226,13 +227,11 @@ function handleStage1Click(index, btn) {
 
     const currentStep = stage1UserInputs.length - 1;
     if (stage1UserInputs[currentStep] !== stage1Sequence[currentStep]) {
-        // 間違えた時点で失敗
         isStage1AcceptingInput = false;
         showFeedback(false, "SEQUENCE ERROR", () => nextQuestion());
         return;
     }
 
-    // 全て正しく押した場合
     if (stage1UserInputs.length === stage1Sequence.length) {
         isStage1AcceptingInput = false;
         correctStageCount++;
@@ -241,26 +240,55 @@ function handleStage1Click(index, btn) {
 }
 
 // ==========================================
-// STAGE 2: 反射測定
+// STAGE 2: 反射測定 / DON'T TOUCH (3回に1回)
 // ==========================================
 let reflexTimeout = null;
 let reflexReady = false;
 let reflexStartTime = 0;
+let isDontTouchRound = false;
+let dontTouchSuccessTimeout = null;
 
 function initStage2() {
     const box = document.getElementById('reflex-box');
     const timeDisplay = document.getElementById('reflex-time-display');
+    const instruction = document.getElementById('stage2-instruction');
+    
     box.innerText = 'WAIT...';
-    box.classList.remove('active-push');
+    box.className = '';
     timeDisplay.innerText = '';
     reflexReady = false;
-    
+
+    // 3回に1回（＝2問目）は Don't touch
+    isDontTouchRound = (currentQuestionIndex % 3 === 1);
+
+    if (isDontTouchRound) {
+        instruction.innerText = "指示に従え！「DON'T TOUCH」のときは押すな！";
+    } else {
+        instruction.innerText = "「PUSH!」が表示された瞬間に画面をタップせよ";
+    }
+
     const randomDelay = Math.random() * 2000 + 1500;
     reflexTimeout = setTimeout(() => {
         reflexReady = true;
-        box.innerText = 'PUSH!';
-        box.classList.add('active-push');
         reflexStartTime = Date.now();
+
+        if (isDontTouchRound) {
+            box.innerText = "DON'T TOUCH!";
+            box.classList.add('active-dont-touch');
+
+            // 1.5秒間押さずに耐えたら成功
+            dontTouchSuccessTimeout = setTimeout(() => {
+                if (reflexReady) {
+                    reflexReady = false;
+                    correctStageCount++;
+                    showFeedback(true, "AVOID SUCCESS", () => nextQuestion());
+                }
+            }, 1500);
+
+        } else {
+            box.innerText = 'PUSH!';
+            box.classList.add('active-push');
+        }
     }, randomDelay);
 }
 
@@ -269,28 +297,37 @@ function handleReflexClick() {
     const timeDisplay = document.getElementById('reflex-time-display');
 
     if (reflexReady) {
-        const reactionTimeMs = Date.now() - reflexStartTime;
-        const reactionTimeSec = (reactionTimeMs / 1000).toFixed(3);
-        
-        timeDisplay.innerText = `反応時間: ${reactionTimeSec} 秒`;
-        clearTimeout(reflexTimeout);
+        if (isDontTouchRound) {
+            // Don't touch の時に触ってしまった場合 ➔ 失敗
+            clearTimeout(dontTouchSuccessTimeout);
+            reflexReady = false;
+            showFeedback(false, "TOUCHED ERROR!", () => nextQuestion());
+        } else {
+            // PUSH の時 ➔ 反射測定（1.0秒以内に緩和）
+            const reactionTimeMs = Date.now() - reflexStartTime;
+            const reactionTimeSec = (reactionTimeMs / 1000).toFixed(3);
+            
+            timeDisplay.innerText = `反応時間: ${reactionTimeSec} 秒`;
+            clearTimeout(reflexTimeout);
 
-        const isSuccess = reactionTimeMs < 600;
-        if (isSuccess) correctStageCount++;
+            const isSuccess = reactionTimeMs <= 1000; // 1.0秒以内に変更
+            if (isSuccess) correctStageCount++;
 
-        setTimeout(() => {
-            showFeedback(isSuccess, `${reactionTimeSec} 秒`, () => nextQuestion());
-        }, 500);
-
+            setTimeout(() => {
+                showFeedback(isSuccess, `${reactionTimeSec} 秒`, () => nextQuestion());
+            }, 500);
+        }
     } else {
+        // お手つき
         box.innerText = 'フライング！';
         clearTimeout(reflexTimeout);
+        if (dontTouchSuccessTimeout) clearTimeout(dontTouchSuccessTimeout);
         showFeedback(false, "早すぎます！", () => nextQuestion());
     }
 }
 
 // ==========================================
-// STAGE 3: 記憶パターン照合
+// STAGE 3: 記憶パターン照合（3〜7個のランダム）
 // ==========================================
 let memorySequence = [];
 let userSequence = [];
@@ -300,7 +337,7 @@ function initStage3() {
     grid.innerHTML = '';
     memorySequence = [];
     userSequence = [];
-    
+
     for (let i = 0; i < 16; i++) {
         const tile = document.createElement('div');
         tile.className = 'memory-tile';
@@ -308,28 +345,31 @@ function initStage3() {
         tile.onclick = () => handleMemoryClick(i);
         grid.appendChild(tile);
     }
-    
-    while (memorySequence.length < 3) {
+
+    // 3個〜7個のランダム枚数
+    const targetCount = Math.floor(Math.random() * 5) + 3; // 3 ~ 7
+
+    while (memorySequence.length < targetCount) {
         const idx = Math.floor(Math.random() * 16);
         if (!memorySequence.includes(idx)) memorySequence.push(idx);
     }
-    
+
     setTimeout(() => {
         const tiles = document.querySelectorAll('.memory-tile');
         memorySequence.forEach(idx => tiles[idx].classList.add('lit'));
         setTimeout(() => {
             tiles.forEach(t => t.classList.remove('lit'));
-        }, 800);
+        }, 900);
     }, 400);
 }
 
 function handleMemoryClick(idx) {
     const tiles = document.querySelectorAll('.memory-tile');
     if (tiles[idx].classList.contains('lit')) return;
-    
+
     tiles[idx].classList.add('lit');
     userSequence.push(idx);
-    
+
     if (userSequence.length === memorySequence.length) {
         const isCorrect = memorySequence.every((val) => userSequence.includes(val));
         if (isCorrect) correctStageCount++;
@@ -338,14 +378,15 @@ function handleMemoryClick(idx) {
 }
 
 // ==========================================
-// STAGE 4: 周波数チューニング
+// STAGE 4: 周波数チューニング（300〜1000、-100/+100追加）
 // ==========================================
 let targetFreq = 0;
 let currentFreq = 0;
 
 function initStage4() {
-    targetFreq = Math.floor(Math.random() * 80) + 10;
-    currentFreq = 0;
+    // 300 ~ 1000
+    targetFreq = Math.floor(Math.random() * 701) + 300;
+    currentFreq = 300;
     document.getElementById('tune-target-val').innerText = targetFreq;
     document.getElementById('tune-current-val').innerText = currentFreq;
 }
@@ -353,24 +394,24 @@ function initStage4() {
 function adjustFrequency(amount) {
     currentFreq += amount;
     if (currentFreq < 0) currentFreq = 0;
-    if (currentFreq > 99) currentFreq = 99;
+    if (currentFreq > 1500) currentFreq = 1500;
     document.getElementById('tune-current-val').innerText = currentFreq;
 }
 
 function submitFrequency() {
-    const isSuccess = Math.abs(currentFreq - targetFreq) <= 3;
+    const isSuccess = Math.abs(currentFreq - targetFreq) <= 5;
     if (isSuccess) correctStageCount++;
     showFeedback(isSuccess, `誤差: ${Math.abs(currentFreq - targetFreq)}`, () => nextQuestion());
 }
 
 // ==========================================
-// リザルト＆討伐ミッション表示
+// リザルト表示
 // ==========================================
 function startLoadingToResult() {
     showScreen('screen-loading');
     const progressBar = document.getElementById('progress-bar');
     let progress = 0;
-    
+
     const interval = setInterval(() => {
         progress += 5;
         progressBar.style.width = `${progress}%`;
@@ -397,54 +438,93 @@ function showFinalResult() {
 }
 
 // ==========================================
-// 管理者モニタ画面（現在アクティブな自端末のみ表示＆リアルタイム更新）
+// マルチデバイス共有ステート & 管理者画面
 // ==========================================
-let adminTimerInterval = null;
+function updateDeviceState() {
+    const currentStageNumber = currentQuestionIndex < totalQuestions ? stageOrder[currentQuestionIndex] : "COMPLETE";
+    const statusText = currentQuestionIndex < totalQuestions ? `STAGE ${currentQuestionIndex + 1} / ${totalQuestions} (Stage ${currentStageNumber})` : "全ミッション完了";
+
+    const state = {
+        deviceId: deviceId,
+        ownerName: currentOwnerName,
+        statusText: statusText,
+        elapsedTimeSec: elapsedTimeSec,
+        lastActive: Date.now()
+    };
+
+    let allDevices = {};
+    try {
+        allDevices = JSON.parse(localStorage.getItem('project_ai_devices') || '{}');
+    } catch(e) { allDevices = {}; }
+
+    allDevices[deviceId] = state;
+    localStorage.setItem('project_ai_devices', JSON.stringify(allDevices));
+}
+
+function startHeartbeat() {
+    if (heartbeatInterval) clearInterval(heartbeatInterval);
+    updateDeviceState();
+    heartbeatInterval = setInterval(updateDeviceState, 2000);
+}
 
 function showAdminScreen() {
     showScreen('screen-admin');
     renderAdminContent();
 
     if (adminTimerInterval) clearInterval(adminTimerInterval);
-    adminTimerInterval = setInterval(() => {
-        const timeElem = document.getElementById('admin-live-timer');
-        if (timeElem) {
-            timeElem.innerText = formatTimer(elapsedTimeSec);
-        }
-    }, 1000);
+    adminTimerInterval = setInterval(renderAdminContent, 1000);
 }
+
+let adminTimerInterval = null;
 
 function renderAdminContent() {
     const container = document.getElementById('screen-admin');
 
-    const currentStageNumber = currentQuestionIndex < totalQuestions ? stageOrder[currentQuestionIndex] : "COMPLETE";
-    const currentProgressText = currentQuestionIndex < totalQuestions ? `STAGE ${currentQuestionIndex + 1} / ${totalQuestions} (Stage ${currentStageNumber})` : "全ミッション完了";
+    let allDevices = {};
+    try {
+        allDevices = JSON.parse(localStorage.getItem('project_ai_devices') || '{}');
+    } catch(e) { allDevices = {}; }
 
-    let html = `
-        <div class="admin-container">
-            <div class="admin-header">
-                <div class="admin-title">全AI防壁 自律稼働状況モニタ</div>
-                <button class="btn btn-accent" style="padding: 6px 12px; font-size: 0.9rem;" onclick="startGame()">画面へ戻る</button>
-            </div>
-            <div class="admin-grid">
+    const now = Date.now();
+    // 6秒以内に通信があったものをアクティブと判定
+    const activeDevices = Object.values(allDevices).filter(dev => (now - dev.lastActive) < 6000);
+
+    let cardsHtml = '';
+    if (activeDevices.length === 0) {
+        cardsHtml = `<div style="color: #8a9bbd; grid-column: 1 / -1; text-align: center; padding: 40px;">現在アクセス中の端末はありません</div>`;
+    } else {
+        activeDevices.forEach(dev => {
+            cardsHtml += `
                 <div class="node-card">
                     <div class="node-header">
-                        <span class="node-name">${currentAccountName}</span>
+                        <span class="node-name">持ち主: ${dev.ownerName}</span>
                         <span class="node-status-badge online">● ONLINE</span>
                     </div>
                     <div class="node-main-status">使用中 (IN USE)</div>
-                    <div class="node-sub-status">${currentProgressText}</div>
+                    <div class="node-sub-status">${dev.statusText}</div>
                     <div class="node-meta-grid">
                         <div>
-                            <div class="node-meta-item">難易度</div>
-                            <div class="node-meta-value">NORMAL</div>
+                            <div class="node-meta-item">端末ID</div>
+                            <div class="node-meta-value">${dev.deviceId}</div>
                         </div>
                         <div>
                             <div class="node-meta-item">経過時間</div>
-                            <div class="node-meta-value" id="admin-live-timer">${formatTimer(elapsedTimeSec)}</div>
+                            <div class="node-meta-value">${formatTimer(dev.elapsedTimeSec)}</div>
                         </div>
                     </div>
                 </div>
+            `;
+        });
+    }
+
+    const html = `
+        <div class="admin-container">
+            <div class="admin-header">
+                <div class="admin-title">全AI防壁 リアルタイム接続モニタ (${activeDevices.length}台接続中)</div>
+                <button class="btn btn-accent" style="padding: 6px 12px; font-size: 0.9rem;" onclick="showScreen('screen-start')">トップへ戻る</button>
+            </div>
+            <div class="admin-grid">
+                ${cardsHtml}
             </div>
         </div>
     `;
