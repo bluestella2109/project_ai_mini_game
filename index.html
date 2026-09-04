@@ -2,171 +2,138 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CYBER TERMINAL SYSTEM</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PROJECT AI - TERMINAL SYSTEM</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
+    <!-- 背景マトリックス/パーティクル -->
     <canvas id="matrix-bg"></canvas>
 
-    <div class="container" id="app-container">
-        <!-- TOP BAR -->
+    <!-- 全画面正誤判定カットイン（青＝成功 / 赤＝失敗） -->
+    <div id="feedback-overlay" class="feedback-overlay">
+        <div id="feedback-text" class="feedback-text">成功</div>
+        <div id="feedback-sub" class="feedback-sub">STAGE CLEAR</div>
+    </div>
+
+    <!-- メインコンテナ -->
+    <div class="container">
+        
+        <!-- ヘッダーバー -->
         <div class="top-bar">
-            <span id="player-display">端末 // 未設定</span>
-            <span id="stage-counter">ステージ 0/12</span>
-            <span id="status-badge" class="badge">状態: 準備完了</span>
+            <span id="stage-counter">STAGE 1 / 5</span>
+            <span class="badge badge-accent">SYSTEM: ACTIVE</span>
         </div>
 
-        <!-- MAIN CONTENT AREA -->
+        <!-- 画面コンテンツエリア -->
         <div class="content">
-            <!-- MODE SELECT SCREEN -->
-            <div id="screen-select" class="screen active">
-                <h1 class="glitch-text" data-text="TERMINAL INTERFACE">TERMINAL INTERFACE</h1>
-                <p>システムモードを選択してください</p>
-                <div style="margin-top: 20px;">
-                    <button class="btn btn-accent" onclick="initDeviceAccount()">CLIENT MODE (端末起動)</button>
-                    <button class="btn" onclick="startAdminMode()">ADMIN DASHBOARD (管理画面)</button>
+
+            <!-- タイトル画面 -->
+            <div id="screen-start" class="screen active">
+                <h1 class="glitch-text" data-text="CYBER AI">CYBER AI</h1>
+                <p>防壁システムにアクセスし、セキュリティロックを解除せよ</p>
+                <div class="btn-start" onclick="startGame()">
+                    START
                 </div>
             </div>
 
-            <!-- NAME INPUT SCREEN (初回のみ表示) -->
-            <div id="screen-name" class="screen">
-                <h2>IPAD SETUP</h2>
-                <p>端末名（iPad番号等）を入力してください</p>
-                <input type="text" id="player-name-input" placeholder="例: iPad-01" maxlength="15">
-                <br>
-                <button class="btn btn-accent" onclick="submitName()">設定完了</button>
+            <!-- STAGE 1: 再起動ノード -->
+            <div id="stage-1" class="screen">
+                <h2>STAGE 1: NODE REBOOT</h2>
+                <p>光るアクセスノードを迅速に選択せよ</p>
+                <div id="reboot-grid" class="reboot-grid"></div>
             </div>
 
-            <!-- CLIENT START SCREEN -->
-            <div id="screen-start" class="screen">
-                <h2>MISSION READY</h2>
-                <p>準備ができたら中央のボタンを押してください</p>
-                <button class="btn-start" onclick="nextStage()">
-                    <span>MISSION</span>
-                    <span>START</span>
-                </button>
+            <!-- STAGE 2: 反射測定 -->
+            <div id="stage-2" class="screen">
+                <h2>STAGE 2: REFLEX TEST</h2>
+                <p>「PUSH!」が表示された瞬間に画面をタップせよ</p>
+                <div id="reflex-box" onclick="handleReflexClick()">WAIT...</div>
+                <div id="reflex-time-display"></div>
             </div>
 
-            <!-- GAME 1: REBOOT -->
-            <div id="screen-g1" class="screen">
-                <h2>SYSTEM REBOOT</h2>
-                <p id="g1-status">位置と順番を覚えてください</p>
-                <div class="reboot-grid" id="g1-nodes"></div>
+            <!-- STAGE 3: 記憶パターン照合 -->
+            <div id="stage-3" class="screen">
+                <h2>STAGE 3: MEMORY MATCH</h2>
+                <p>一瞬点灯したセキュリティパターンを記憶し復元せよ</p>
+                <div id="memory-grid" class="memory-grid"></div>
             </div>
 
-            <!-- GAME 2: REFLEX -->
-            <div id="screen-g2" class="screen">
-                <h2>NEURAL REFLEX</h2>
-                <p>指示に従って素早くタップしてください</p>
-                <div id="reflex-box" onclick="handleReflexTap()">
-                    <div id="reflex-text">WAIT...</div>
-                    <div id="reflex-subtext" style="font-size: 0.8rem; margin-top: 5px;"></div>
-                </div>
-            </div>
-
-            <!-- GAME 3: MEMORY CORE -->
-            <div id="screen-g3" class="screen">
-                <h2>MEMORY CORE</h2>
-                <p id="g3-status">記憶してください...</p>
-                <div class="memory-grid" id="g3-grid"></div>
-            </div>
-
-            <!-- GAME 4: FREQUENCY TUNE -->
-            <div id="screen-g4" class="screen">
-                <h2>FREQUENCY TUNE</h2>
-                <p id="g4-status">目標の周波数に数値を合わせてください</p>
+            <!-- STAGE 4: 周波数チューニング -->
+            <div id="stage-4" class="screen">
+                <h2>STAGE 4: FREQUENCY TUNE</h2>
+                <p>目標周波数に数値を合致させよ</p>
                 <div class="tune-container">
-                    <div class="tune-target">TARGET: <span id="g4-target-val">0</span></div>
-                    <div class="tune-current" id="g4-current-val">0</div>
+                    <div class="tune-target">TARGET: <span id="tune-target-val">00</span></div>
+                    <div id="tune-current-val" class="tune-current">0</div>
                     <div>
-                        <button class="btn" onclick="adjustTune(-10)">-10</button>
-                        <button class="btn" onclick="adjustTune(-1)">-1</button>
-                        <button class="btn" onclick="adjustTune(1)">+1</button>
-                        <button class="btn" onclick="adjustTune(10)">+10</button>
+                        <button class="btn" onclick="adjustFrequency(-10)">-10</button>
+                        <button class="btn" onclick="adjustFrequency(-1)">-1</button>
+                        <button class="btn" onclick="adjustFrequency(1)">+1</button>
+                        <button class="btn" onclick="adjustFrequency(10)">+10</button>
                     </div>
-                    <br>
-                    <button class="btn btn-accent" onclick="submitTune()">TUNE IN</button>
+                    <button class="btn btn-accent" style="margin-top: 20px;" onclick="submitFrequency()">ENTER</button>
                 </div>
             </div>
 
-            <!-- GAME 5: PATH FINDER -->
-            <div id="screen-g5" class="screen">
-                <h2>PATH FINDER</h2>
-                <p id="g5-status">SからGへの正しいルートを入力してください</p>
-                <div class="path-grid" id="g5-grid"></div>
-                <div class="path-inputs" id="g5-user-path">入力: -</div>
+            <!-- STAGE 5: パス解析 -->
+            <div id="stage-5" class="screen">
+                <h2>STAGE 5: PATH ANALYSIS</h2>
+                <p>コマンド（↑↓←→）を入力してコアへ接続せよ</p>
+                <div id="path-grid" class="path-grid">
+                    <div class="path-cell start">START</div>
+                    <div class="path-cell"></div>
+                    <div class="path-cell block">×</div>
+                    <div class="path-cell"></div>
+                    <div class="path-cell block">×</div>
+                    <div class="path-cell goal">GOAL</div>
+                </div>
+                <div id="path-input-display" class="path-inputs">---</div>
                 <div>
-                    <button class="btn" onclick="addPathInput('↑')">↑</button>
-                    <button class="btn" onclick="addPathInput('↓')">↓</button>
+                    <button class="btn" onclick="addPathInput('↑')">↑</button><br>
                     <button class="btn" onclick="addPathInput('←')">←</button>
+                    <button class="btn" onclick="addPathInput('↓')">↓</button>
                     <button class="btn" onclick="addPathInput('→')">→</button>
                 </div>
                 <div style="margin-top: 10px;">
-                    <button class="btn" onclick="clearPath()">CLEAR</button>
+                    <button class="btn" onclick="resetPathInput()">CLEAR</button>
                     <button class="btn btn-accent" onclick="submitPath()">EXECUTE</button>
                 </div>
             </div>
 
-            <!-- EMERGENCY ALERT SCREEN -->
-            <div id="screen-alert" class="screen">
-                <h1 class="glitch-text alert-title" data-text="SYSTEM EMERGENCY">SYSTEM EMERGENCY</h1>
-                <div class="alert-box">
-                    <p class="accent-text" style="font-weight: bold; font-size: 1.2rem;">【警告】全セキュリティシステムが暴走を開始しました。</p>
-                    <p style="color: #ccc;">ただちにログデータの解析を実施し、討伐適合度プロファイルを算出してください。</p>
+            <!-- ローディング画面 -->
+            <div id="screen-loading" class="screen">
+                <h2 class="alert-title">ANALYZING RESULT...</h2>
+                <p>クリアデータをシステムに送信中</p>
+                <div class="progress-bar-container">
+                    <div id="progress-bar" class="progress-bar"></div>
                 </div>
-                <br>
-                <button class="btn btn-accent" onclick="startLoadingPhase()">解析シーケンスを開始</button>
             </div>
 
-            <!-- LOADING & RESULT SCREEN -->
+            <!-- リザルト画面 -->
             <div id="screen-result" class="screen">
-                <div id="loading-box" style="width: 100%;">
-                    <h2>DATA ANALYZING...</h2>
-                    <p id="loading-status">ログデータを集計中...</p>
-                    <div class="progress-bar-container">
-                        <div class="progress-bar" id="progress-bar"></div>
+                <h2>EXECUTION RESULT</h2>
+                <p>正解数: <span id="correct-count" class="accent-text">0</span> / 5</p>
+                <div class="result-score-box">
+                    <div id="score-percent" class="score-percent">0%</div>
+                    <div id="score-rank" class="score-rank">RANK C</div>
+                    <div id="mission-instruction" class="mission-instruction">
+                        【FINAL MISSION】教室へ向かい、暴走AIを討伐せよ！
                     </div>
                 </div>
-
-                <div id="result-box" style="display: none; width: 100%;">
-                    <h2>RESULT PROFILE</h2>
-                    <p>全ミッション完了 / 解析結果</p>
-                    <div class="result-score-box">
-                        <div style="font-size: 1rem; color: var(--text-sub);">初回成功ステージ: <span id="correct-count">0</span> / 12</div>
-                        <div class="score-percent" id="score-percent">0%</div>
-                        <div class="score-rank" id="score-rank">RANK -</div>
-                    </div>
-                    <button class="btn btn-accent" onclick="resetTerminal()">端末リセット (次のプレイヤーへ)</button>
-                </div>
+                <button class="btn btn-accent" onclick="startGame()">RETRY</button>
+                <button class="btn" onclick="showAdminScreen()">ADMIN MONITOR</button>
             </div>
 
-            <!-- ADMIN DASHBOARD SCREEN -->
+            <!-- 管理者モニター画面 -->
             <div id="screen-admin" class="screen">
-                <h2>ADMIN DASHBOARD</h2>
-                <p>全端末のリアルタイム進行状況</p>
-                <table class="admin-table">
-                    <thead>
-                        <tr>
-                            <th>iPad名</th>
-                            <th>問題の種類</th>
-                            <th>現在の状況</th>
-                            <th>経過時間</th>
-                        </tr>
-                    </thead>
-                    <tbody id="admin-list">
-                        <!-- JSで動的生成 -->
-                    </tbody>
-                </table>
-                <br>
-                <button class="btn" onclick="exitAdmin()">終了</button>
+                <!-- script.jsで動的描画 -->
             </div>
+
         </div>
     </div>
 
-    <!-- Firebase SDK (v8) -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
