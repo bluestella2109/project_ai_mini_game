@@ -1,34 +1,32 @@
-// --- Firebase 設定 ---
+// --- Firebase 設定 (設定値反映済み) ---
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyAIRFvaF397DOiNARhoG6B7w-xdT7bGNFk",
+    authDomain: "sf-minigame.firebaseapp.com",
+    projectId: "sf-minigame",
+    storageBucket: "sf-minigame.firebasestorage.app",
+    messagingSenderId: "751927738343",
+    appId: "1:751927738343:web:91d5911881454d7c414742"
 };
 
-let db = null;
-if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
-    firebase.initializeApp(firebaseConfig);
-    db = firebase.firestore();
-}
+// Firebase 初期化
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
-// マトリックス背景アニメーション
+// 背景マトリックス
 const canvas = document.getElementById('matrix-bg');
 const ctx = canvas.getContext('2d');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-const alphabet = '0123456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+const alphabet = '0123456789ABCDEF';
 const fontSize = 14;
 const columns = canvas.width / fontSize;
 const rainDrops = Array(Math.floor(columns)).fill(1);
 
 function renderMatrix() {
-    ctx.fillStyle = 'rgba(3, 8, 20, 0.08)';
+    ctx.fillStyle = 'rgba(10, 10, 10, 0.1)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#00f0ff';
+    ctx.fillStyle = '#ffffff';
     ctx.font = fontSize + 'px monospace';
 
     for (let i = 0; i < rainDrops.length; i++) {
@@ -40,22 +38,24 @@ function renderMatrix() {
         rainDrops[i]++;
     }
 }
-setInterval(renderMatrix, 30);
+setInterval(renderMatrix, 33);
 
 // グローバル変数
 let playerName = "未設定";
 let deviceId = 'DEV-' + Math.floor(1000 + Math.random() * 9000);
 let currentStageIndex = 0;
-let correctStageCount = 0; // 一発正解カウント
+let correctStageCount = 0;
 let stageFirstTry = true;
 let startTime = Date.now();
 let stageQueue = [];
 
-const NODE_NAMES = ['CORE', 'MEMORY', 'POWER', 'NETWORK', 'SYSTEM', 'DATA', 'LOGIC', 'NEURAL'];
+const NODE_NAMES = ['NODE-A', 'NODE-B', 'NODE-C', 'NODE-D', 'NODE-E', 'NODE-F'];
 const GAME_NAMES = {
     'g1': 'SYSTEM REBOOT',
     'g2': 'NEURAL REFLEX',
-    'g3': 'MEMORY CORE'
+    'g3': 'MEMORY CORE',
+    'g4': 'FREQUENCY TUNE',
+    'g5': 'PATH FINDER'
 };
 
 function setScreen(screenId) {
@@ -77,18 +77,11 @@ function updateState(statusText, missionName = '-') {
         lastActive: Date.now()
     };
 
-    if (db) {
-        db.collection("terminal_sessions").doc(deviceId).set(sessionData);
-    }
-    
-    const localData = JSON.parse(localStorage.getItem('ai_admin_sync') || '{}');
-    localData[deviceId] = sessionData;
-    localStorage.setItem('ai_admin_sync', JSON.stringify(localData));
+    // Firebase Firestoreへ保存
+    db.collection("terminal_sessions").doc(deviceId).set(sessionData);
 }
 
-function goToNameInput() {
-    setScreen('screen-name');
-}
+function goToNameInput() { setScreen('screen-name'); }
 
 function submitName() {
     const input = document.getElementById('player-name-input').value.trim();
@@ -107,16 +100,14 @@ function startClientMode() {
     buildStageQueue();
 }
 
+// 5種類のゲームを12ステージに割り振る
 function buildStageQueue() {
-    const g1 = [1, 2, 3, 4].sort(() => Math.random() - 0.5);
-    const g2 = [1, 2, 3, 4].sort(() => Math.random() - 0.5);
-    const g3 = [1, 2, 3, 4].sort(() => Math.random() - 0.5);
-    
+    const games = ['g1', 'g2', 'g3', 'g4', 'g5'];
     stageQueue = [];
-    for (let i = 0; i < 4; i++) {
-        stageQueue.push({ type: 'g1', level: g1[i] });
-        stageQueue.push({ type: 'g2', level: g2[i] });
-        stageQueue.push({ type: 'g3', level: g3[i] });
+    for (let i = 0; i < 12; i++) {
+        const type = games[i % games.length];
+        const level = Math.floor(i / 3) + 1;
+        stageQueue.push({ type, level });
     }
     stageQueue.sort(() => Math.random() - 0.5);
 }
@@ -133,6 +124,8 @@ function nextStage() {
     if (stage.type === 'g1') runG1(stage.level);
     else if (stage.type === 'g2') runG2(stage.level);
     else if (stage.type === 'g3') runG3(stage.level);
+    else if (stage.type === 'g4') runG4(stage.level);
+    else if (stage.type === 'g5') runG5(stage.level);
 }
 
 // --- GAME 1: REBOOT ---
@@ -175,7 +168,7 @@ function runG1(level) {
         }
         flashG1Node(g1Seq[idx]);
         idx++;
-    }, 700);
+    }, 650);
 }
 
 function flashG1Node(name) {
@@ -199,84 +192,74 @@ function onG1NodeClick(element, name) {
         if (g1Step >= g1Seq.length) {
             if (stageFirstTry) correctStageCount++;
             g1AcceptInput = false;
-            setTimeout(nextStage, 600);
+            setTimeout(nextStage, 500);
         }
     } else {
         stageFirstTry = false;
         g1Step = 0;
         document.getElementById('g1-status').innerText = 'エラー！再試行中...';
         g1AcceptInput = false;
-        setTimeout(() => runG1(stageQueue[currentStageIndex - 1].level), 1000);
+        setTimeout(() => runG1(stageQueue[currentStageIndex - 1].level), 900);
     }
 }
 
 // --- GAME 2: REFLEX ---
 let reflexState = 'WAIT';
 let reflexTimer = null;
-let reflexStartTime = 0;
 
 function runG2(level) {
     setScreen('screen-g2');
     updateState(`プレイ中 (${currentStageIndex}/12)`, GAME_NAMES['g2']);
     
-    const box = document.getElementById('reflex-box');
     const txt = document.getElementById('reflex-text');
     const sub = document.getElementById('reflex-subtext');
 
     txt.innerText = 'WAIT...';
-    txt.style.color = 'var(--main-cyan)';
+    txt.style.color = '#fff';
     sub.innerText = '';
-    box.style.borderColor = 'var(--main-cyan)';
     reflexState = 'WAIT';
 
-    const delay = 1500 + Math.random() * 2500;
-    const isTrap = Math.random() < 0.35;
+    const delay = 1500 + Math.random() * 2000;
+    const isTrap = Math.random() < 0.3;
 
     reflexTimer = setTimeout(() => {
         if (isTrap) {
             reflexState = 'TRAP';
-            txt.innerText = 'DO NOT TOUCH';
-            txt.style.color = 'var(--alert-red)';
-            box.style.borderColor = 'var(--alert-red)';
+            txt.innerText = 'DON\'T PUSH';
+            txt.style.color = 'var(--accent-red)';
             setTimeout(() => {
                 if (reflexState === 'TRAP') {
                     if (stageFirstTry) correctStageCount++;
                     nextStage();
                 }
-            }, 1200);
+            }, 1000);
         } else {
             reflexState = 'PUSH';
             txt.innerText = 'PUSH!';
-            txt.style.color = '#00ffaa';
-            box.style.borderColor = '#00ffaa';
-            reflexStartTime = Date.now();
+            txt.style.color = 'var(--accent-red)';
         }
     }, delay);
 }
 
 function handleReflexTap() {
     const txt = document.getElementById('reflex-text');
-    const sub = document.getElementById('reflex-subtext');
 
     if (reflexState === 'WAIT') {
         stageFirstTry = false;
         clearTimeout(reflexTimer);
         txt.innerText = 'EARLY!';
-        txt.style.color = 'var(--alert-red)';
-        setTimeout(() => runG2(stageQueue[currentStageIndex - 1].level), 1000);
+        txt.style.color = 'var(--accent-red)';
+        setTimeout(() => runG2(stageQueue[currentStageIndex - 1].level), 900);
     } else if (reflexState === 'TRAP') {
         stageFirstTry = false;
         clearTimeout(reflexTimer);
         txt.innerText = 'PENALTY!';
-        setTimeout(() => runG2(stageQueue[currentStageIndex - 1].level), 1000);
+        setTimeout(() => runG2(stageQueue[currentStageIndex - 1].level), 900);
     } else if (reflexState === 'PUSH') {
-        const reactionTime = (Date.now() - reflexStartTime) / 1000;
-        const aiPercent = Math.max(10, Math.min(99, Math.floor((0.5 - reactionTime) * 200 + 70)));
-        txt.innerText = `${reactionTime.toFixed(3)} SEC`;
-        sub.innerText = `AI適合率: ${aiPercent}%`;
+        txt.innerText = 'SUCCESS';
         reflexState = 'DONE';
         if (stageFirstTry) correctStageCount++;
-        setTimeout(nextStage, 1200);
+        setTimeout(nextStage, 600);
     }
 }
 
@@ -300,7 +283,7 @@ function runG3(level) {
         grid.appendChild(tile);
     }
 
-    const count = 1 + level * 2; 
+    const count = 2 + level; 
     while (memoryTarget.length < count) {
         let r = Math.floor(Math.random() * 16);
         if (!memoryTarget.includes(r)) memoryTarget.push(r);
@@ -313,7 +296,7 @@ function runG3(level) {
     setTimeout(() => {
         tiles.forEach(t => t.classList.remove('lit'));
         document.getElementById('g3-status').innerText = '点灯していたタイルをタップしてください';
-    }, 1800);
+    }, 1500);
 }
 
 function onMemoryTileClick(idx) {
@@ -325,12 +308,98 @@ function onMemoryTileClick(idx) {
         tiles[idx].classList.add('lit');
         if (memoryUserSelection.length === memoryTarget.length) {
             if (stageFirstTry) correctStageCount++;
-            setTimeout(nextStage, 600);
+            setTimeout(nextStage, 500);
         }
     } else {
         stageFirstTry = false;
-        document.getElementById('g3-status').innerText = '位置エラー！再挑戦...';
-        setTimeout(() => runG3(stageQueue[currentStageIndex - 1].level), 1000);
+        document.getElementById('g3-status').innerText = 'エラー！再挑戦...';
+        setTimeout(() => runG3(stageQueue[currentStageIndex - 1].level), 900);
+    }
+}
+
+// --- GAME 4: FREQUENCY TUNE ---
+let g4Target = 0;
+let g4Current = 0;
+
+function runG4(level) {
+    setScreen('screen-g4');
+    updateState(`プレイ中 (${currentStageIndex}/12)`, GAME_NAMES['g4']);
+
+    g4Target = Math.floor(Math.random() * 80) + 10;
+    g4Current = 0;
+
+    document.getElementById('g4-target-val').innerText = g4Target;
+    document.getElementById('g4-current-val').innerText = g4Current;
+    document.getElementById('g4-status').innerText = '目標の周波数に数値を合わせてください';
+}
+
+function adjustTune(val) {
+    g4Current = Math.max(0, Math.min(100, g4Current + val));
+    document.getElementById('g4-current-val').innerText = g4Current;
+}
+
+function submitTune() {
+    if (g4Current === g4Target) {
+        if (stageFirstTry) correctStageCount++;
+        setTimeout(nextStage, 400);
+    } else {
+        stageFirstTry = false;
+        document.getElementById('g4-status').innerText = '周波数不一致！再調整してください';
+    }
+}
+
+// --- GAME 5: PATH FINDER ---
+let g5UserPath = [];
+
+function runG5(level) {
+    setScreen('screen-g5');
+    updateState(`プレイ中 (${currentStageIndex}/12)`, GAME_NAMES['g5']);
+
+    g5UserPath = [];
+    document.getElementById('g5-user-path').innerText = '入力: -';
+    document.getElementById('g5-status').innerText = 'SからGへの正しいルートを入力してください';
+
+    const grid = document.getElementById('g5-grid');
+    grid.innerHTML = '';
+
+    const cells = [
+        'S', '', '',
+        '#', '#', '',
+        '', '', 'G'
+    ];
+
+    cells.forEach(c => {
+        const div = document.createElement('div');
+        div.className = 'path-cell';
+        if (c === 'S') div.classList.add('start');
+        if (c === 'G') div.classList.add('goal');
+        if (c === '#') div.classList.add('block');
+        div.innerText = c;
+        grid.appendChild(div);
+    });
+}
+
+function addPathInput(dir) {
+    if (g5UserPath.length < 6) {
+        g5UserPath.push(dir);
+        document.getElementById('g5-user-path').innerText = '入力: ' + g5UserPath.join(' ');
+    }
+}
+
+function clearPath() {
+    g5UserPath = [];
+    document.getElementById('g5-user-path').innerText = '入力: -';
+}
+
+function submitPath() {
+    const inputStr = g5UserPath.join('');
+    if (inputStr === '→→↓↓') {
+        if (stageFirstTry) correctStageCount++;
+        setTimeout(nextStage, 400);
+    } else {
+        stageFirstTry = false;
+        document.getElementById('g5-status').innerText = 'ルート不整合！やり直してください';
+        clearPath();
     }
 }
 
@@ -338,12 +407,11 @@ function onMemoryTileClick(idx) {
 function triggerEmergencyMode() {
     updateState('暴走発生', '全システム停止');
     document.getElementById('app-container').classList.add('alert-mode');
-    document.getElementById('status-badge').classList.add('badge-danger');
+    document.getElementById('status-badge').classList.add('badge-accent');
     document.getElementById('status-badge').innerText = '緊急警告';
     setScreen('screen-alert');
 }
 
-// ③ ローディング＆結果計算処理
 function startLoadingPhase() {
     setScreen('screen-result');
     document.getElementById('loading-box').style.display = 'block';
@@ -354,18 +422,18 @@ function startLoadingPhase() {
     let width = 0;
 
     const interval = setInterval(() => {
-        width += Math.random() * 15;
+        width += Math.random() * 18;
         if (width >= 100) {
             width = 100;
             progressBar.style.width = '100%';
             clearInterval(interval);
-            setTimeout(showFinalResult, 600);
+            setTimeout(showFinalResult, 500);
         } else {
             progressBar.style.width = width + '%';
             if (width > 60) loadingStatus.innerText = '討伐適合度プロファイルを計算中...';
-            else if (width > 30) loadingStatus.innerText = '反射データおよび記憶ログの照合中...';
+            else if (width > 30) loadingStatus.innerText = 'ログデータを集計中...';
         }
-    }, 200);
+    }, 180);
 }
 
 function showFinalResult() {
@@ -377,7 +445,7 @@ function showFinalResult() {
     document.getElementById('score-percent').innerText = `${percent}%`;
 
     let rank = 'RANK C';
-    if (percent === 100) rank = 'RANK S+';
+    if (percent === 100) rank = 'RANK S';
     else if (percent >= 80) rank = 'RANK A';
     else if (percent >= 60) rank = 'RANK B';
 
@@ -386,7 +454,7 @@ function showFinalResult() {
 
 function resetTerminal() {
     document.getElementById('app-container').classList.remove('alert-mode');
-    document.getElementById('status-badge').classList.remove('badge-danger');
+    document.getElementById('status-badge').classList.remove('badge-accent');
     deviceId = 'DEV-' + Math.floor(1000 + Math.random() * 9000);
     currentStageIndex = 0;
     correctStageCount = 0;
@@ -396,24 +464,21 @@ function resetTerminal() {
     setScreen('screen-select');
 }
 
-// --- ADMIN DASHBOARD (② リアルタイム秒毎更新 & 日本語化) ---
+// --- ADMIN DASHBOARD ---
 let adminInterval = null;
 let unsubscribeAdmin = null;
 
 function startAdminMode() {
     setScreen('screen-admin');
-    
-    // 1秒ごとにタイマーを再描画（リアルタイム経過時間更新）
     adminInterval = setInterval(refreshAdminUI, 1000);
 
-    if (db) {
-        unsubscribeAdmin = db.collection("terminal_sessions").onSnapshot(snapshot => {
-            const data = {};
-            snapshot.forEach(doc => { data[doc.id] = doc.data(); });
-            window.cachedAdminData = data;
-            refreshAdminUI();
-        });
-    }
+    // Firestoreからリアルタイム受信
+    unsubscribeAdmin = db.collection("terminal_sessions").onSnapshot(snapshot => {
+        const data = {};
+        snapshot.forEach(doc => { data[doc.id] = doc.data(); });
+        window.cachedAdminData = data;
+        refreshAdminUI();
+    });
 }
 
 function exitAdmin() {
@@ -423,7 +488,7 @@ function exitAdmin() {
 }
 
 function refreshAdminUI() {
-    const data = db ? (window.cachedAdminData || {}) : JSON.parse(localStorage.getItem('ai_admin_sync') || '{}');
+    const data = window.cachedAdminData || {};
     const list = document.getElementById('admin-list');
     list.innerHTML = '';
 
@@ -435,10 +500,10 @@ function refreshAdminUI() {
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td style="color: var(--main-cyan); font-weight: bold;">${dev.name || '未設定'}</td>
+            <td style="font-weight: bold; color: #fff;">${dev.name || '未設定'}</td>
             <td>${dev.mission || '-'}</td>
-            <td><span class="badge">${dev.status}</span></td>
-            <td style="font-family: monospace; font-size: 1.1rem;">${elapsedMin}分 ${elapsedSec.toString().padStart(2, '0')}秒</td>
+            <td><span class="badge ${dev.status.includes('暴走') ? 'badge-accent' : ''}">${dev.status}</span></td>
+            <td style="font-family: monospace;">${elapsedMin}分 ${elapsedSec.toString().padStart(2, '0')}秒</td>
         `;
         list.appendChild(tr);
     });
