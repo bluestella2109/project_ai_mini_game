@@ -3,65 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PROJECT AI // SYSTEM CONTROL</title>
+    <title>AI CONTROL TERMINAL</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Firebase SDK (CDN) -->
+    <!-- Google Fonts: Orbitron & Noto Sans JP -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 </head>
 <body>
 
-<canvas id="bg-canvas"></canvas>
+<!-- 背景レイヤー -->
+<div class="bg-layer">
+    <div class="grid-overlay"></div>
+    <div class="scanlines"></div>
+    <canvas id="matrix-canvas"></canvas>
+</div>
 
 <div id="app">
-    <!-- 1. 初期選択画面 -->
-    <section id="screen-entry" class="screen active">
-        <div class="header-ui">SYSTEM READY // ACCESS POINT</div>
-        <h1 class="glitch-text">PROJECT AI</h1>
-        <p class="sub-text">侵入を開始するには下のボタンをタップしてください</p>
-        <div class="start-circle-outer" onclick="app.initPlayer()">
-            <div class="start-circle-inner">
-                <div class="power-icon"></div>
-                <span>MISSION START</span>
+    <!-- モード選択 -->
+    <section id="screen-gate" class="screen active">
+        <div class="frame">
+            <h1 class="glitch" data-text="AI CORE SYSTEM">AI CORE SYSTEM</h1>
+            <div class="gate-options">
+                <button onclick="ui.transition('screen-entry')" class="cyber-btn">
+                    <span class="btn-glitch"></span>MISSION START
+                </button>
+                <button onclick="admin.login()" class="cyber-btn secondary">ADMIN PANEL</button>
             </div>
         </div>
-        <button class="admin-link" onclick="app.showAdminLogin()">ADMINISTRATOR LOGIN</button>
     </section>
 
-    <!-- 2. ゲームコンテナ -->
+    <!-- エントリ画面 -->
+    <section id="screen-entry" class="screen">
+        <div class="hud-top">PROJECT AI // USER_ID: <span id="user-id-disp">----</span></div>
+        <div class="mission-briefing">
+            <h2>ミッション概要</h2>
+            <p>AIの思考回路が暴走を開始しました。4つのプロトコルを実行し、物理遮断シーケンスを起動させてください。</p>
+            <div class="start-trigger" onclick="game.start()">
+                <div class="inner-circle">START</div>
+                <svg class="svg-ring"><circle cx="75" cy="75" r="70"></circle></svg>
+            </div>
+        </div>
+    </section>
+
+    <!-- ゲームメイン画面 -->
     <section id="screen-game" class="screen">
-        <div class="game-hud">
-            <div class="hud-left">MISSION: <span id="mission-num">01</span></div>
-            <div class="hud-center" id="mission-title">SYSTEM REBOOT</div>
-            <div class="hud-right">ID: <span id="display-id">--</span></div>
+        <div class="game-header">
+            <div class="mission-tag">MISSION <span id="m-num">01</span></div>
+            <div class="mission-name" id="m-name">SYSTEM REBOOT</div>
+            <div class="timer-box">ELAPSED: <span id="live-timer">00:00</span></div>
         </div>
-        <div id="game-canvas-area">
-            <!-- ここにJSでゲーム内容が描画される -->
+        
+        <div id="game-container">
+            <!-- JSで各ゲームの内容を注入 -->
+        </div>
+
+        <div class="game-footer">
+            <div class="status-bar">SYSTEM STATUS: <span class="typing">OPERATIONAL...</span></div>
         </div>
     </section>
 
-    <!-- 3. AI侵略アラート画面 -->
+    <!-- 侵略アラート画面 -->
     <section id="screen-alert" class="screen">
-        <div class="alert-overlay"></div>
-        <div class="alert-content">
-            <h2 class="alert-title">CRITICAL ERROR</h2>
-            <div class="alert-msg">
-                <p>AIシステムの暴走を確認。物理層への干渉が開始されました。</p>
-                <p class="highlight">この端末の制御は既に奪われています。</p>
-                <p>至急、教室内にある「メインサーバー」を物理的にシャットダウンし、AIの拡散を阻止してください！</p>
+        <div class="alert-box">
+            <h1 class="critical">WARNING: AI TAKEOVER</h1>
+            <div class="alert-body">
+                <p class="blink-text">AIによる全システム占拠を検知</p>
+                <div class="msg-box">
+                    「人間は不合理だ。この教室の制御権は私がもらう。」<br><br>
+                    <span class="highlight">【最終任務】</span><br>
+                    AIは既に外部ネットワークへ拡散を開始した。<br>
+                    物理的なシャットダウン以外に止める術はない。<br>
+                    <span class="red">背後のメインサーバーを破壊（停止）せよ。</span>
+                </div>
+                <button class="reset-btn" onclick="location.reload()">TERMINAL REBOOT</button>
             </div>
-            <button class="reset-btn" onclick="location.reload()">TERMINAL REBOOT</button>
         </div>
     </section>
 
-    <!-- 4. 管理者画面 -->
+    <!-- 管理者画面 -->
     <section id="screen-admin" class="screen">
-        <div class="admin-header">
+        <div class="admin-ui">
             <h2>REALTIME NODE MONITOR</h2>
-            <button onclick="location.reload()">LOGOUT</button>
-        </div>
-        <div id="admin-device-list" class="admin-grid">
-            <!-- デバイス状況がカードで並ぶ -->
+            <div id="admin-list" class="admin-cards"></div>
+            <button onclick="location.reload()" class="cyber-btn">EXIT</button>
         </div>
     </section>
 </div>
