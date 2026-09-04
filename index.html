@@ -22,26 +22,32 @@
         
         <!-- ヘッダーバー -->
         <div class="top-bar">
-            <span id="stage-counter">STAGE 1 / 5</span>
+            <span id="stage-counter">STAGE 1 / 12</span>
             <span class="badge badge-accent">SYSTEM: ACTIVE</span>
         </div>
 
         <!-- 画面コンテンツエリア -->
         <div class="content">
 
-            <!-- タイトル画面 -->
+            <!-- タイトル & アカウント設定画面 -->
             <div id="screen-start" class="screen active">
-                <h1 class="glitch-text" data-text="CYBER AI">CYBER AI</h1>
+                <h1 class="glitch-text" data-text="PROJECT AI">PROJECT AI</h1>
                 <p>防壁システムにアクセスし、セキュリティロックを解除せよ</p>
+                
+                <div class="login-box">
+                    <label for="account-name-input">ACCOUNT / TABLET ID</label>
+                    <input type="text" id="account-name-input" placeholder="例: OPERATOR-01" maxlength="15">
+                </div>
+
                 <div class="btn-start" onclick="startGame()">
                     START
                 </div>
             </div>
 
-            <!-- STAGE 1: 再起動ノード -->
+            <!-- STAGE 1: ボタン順番記憶 -->
             <div id="stage-1" class="screen">
-                <h2>STAGE 1: NODE REBOOT</h2>
-                <p>光るアクセスノードを迅速に選択せよ</p>
+                <h2>STAGE 1: BUTTON MEMORY</h2>
+                <p id="stage1-instruction">光るボタンの順番を記憶せよ</p>
                 <div id="reboot-grid" class="reboot-grid"></div>
             </div>
 
@@ -77,31 +83,6 @@
                 </div>
             </div>
 
-            <!-- STAGE 5: パス解析 -->
-            <div id="stage-5" class="screen">
-                <h2>STAGE 5: PATH ANALYSIS</h2>
-                <p>コマンド（↑↓←→）を入力してコアへ接続せよ</p>
-                <div id="path-grid" class="path-grid">
-                    <div class="path-cell start">START</div>
-                    <div class="path-cell"></div>
-                    <div class="path-cell block">×</div>
-                    <div class="path-cell"></div>
-                    <div class="path-cell block">×</div>
-                    <div class="path-cell goal">GOAL</div>
-                </div>
-                <div id="path-input-display" class="path-inputs">---</div>
-                <div>
-                    <button class="btn" onclick="addPathInput('↑')">↑</button><br>
-                    <button class="btn" onclick="addPathInput('←')">←</button>
-                    <button class="btn" onclick="addPathInput('↓')">↓</button>
-                    <button class="btn" onclick="addPathInput('→')">→</button>
-                </div>
-                <div style="margin-top: 10px;">
-                    <button class="btn" onclick="resetPathInput()">CLEAR</button>
-                    <button class="btn btn-accent" onclick="submitPath()">EXECUTE</button>
-                </div>
-            </div>
-
             <!-- ローディング画面 -->
             <div id="screen-loading" class="screen">
                 <h2 class="alert-title">ANALYZING RESULT...</h2>
@@ -114,7 +95,7 @@
             <!-- リザルト画面 -->
             <div id="screen-result" class="screen">
                 <h2>EXECUTION RESULT</h2>
-                <p>正解数: <span id="correct-count" class="accent-text">0</span> / 5</p>
+                <p>正解数: <span id="correct-count" class="accent-text">0</span> / 12</p>
                 <div class="result-score-box">
                     <div id="score-percent" class="score-percent">0%</div>
                     <div id="score-rank" class="score-rank">RANK C</div>
