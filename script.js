@@ -8,39 +8,65 @@ const firebaseConfig = {
     appId: "1:751927738343:web:91d5911881454d7c414742"
 };
 
-// Firebase 初期化
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// 背景マトリックス
+// --- 背景背景サイバーパーティクルアニメーション ---
 const canvas = document.getElementById('matrix-bg');
 const ctx = canvas.getContext('2d');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-const alphabet = '0123456789ABCDEF';
-const fontSize = 14;
-const columns = canvas.width / fontSize;
-const rainDrops = Array(Math.floor(columns)).fill(1);
+const particles = [];
+const particleCount = 60;
 
-function renderMatrix() {
-    ctx.fillStyle = 'rgba(10, 10, 10, 0.1)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#ffffff';
-    ctx.font = fontSize + 'px monospace';
-
-    for (let i = 0; i < rainDrops.length; i++) {
-        const text = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
-        ctx.fillText(text, i * fontSize, rainDrops[i] * fontSize);
-        if (rainDrops[i] * fontSize > canvas.height && Math.random() > 0.975) {
-            rainDrops[i] = 0;
-        }
-        rainDrops[i]++;
-    }
+for (let i = 0; i < particleCount; i++) {
+    particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        vx: (Math.random() - 0.5) * 1.5,
+        vy: (Math.random() - 0.5) * 1.5,
+        radius: Math.random() * 2 + 1,
+        color: Math.random() > 0.5 ? '#ff2a2a' : '#00f0ff'
+    });
 }
-setInterval(renderMatrix, 33);
 
-// グローバル変数
+function renderBackground() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    for (let i = 0; i < particleCount; i++) {
+        let p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+
+        if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fillStyle = p.color;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = p.color;
+        ctx.fill();
+
+        for (let j = i + 1; j < particleCount; j++) {
+            let p2 = particles[j];
+            let dist = Math.hypot(p.x - p2.x, p.y - p2.y);
+            if (dist < 120) {
+                ctx.beginPath();
+                ctx.moveTo(p.x, p.y);
+                ctx.lineTo(p2.x, p2.y);
+                ctx.strokeStyle = `rgba(255, 42, 42, ${1 - dist / 120})`;
+                ctx.lineWidth = 0.5;
+                ctx.stroke();
+            }
+        }
+    }
+    requestAnimationFrame(renderBackground);
+}
+renderBackground();
+
+// --- グローバル変数 ---
 let playerName = "未設定";
 let deviceId = 'DEV-' + Math.floor(1000 + Math.random() * 9000);
 let currentStageIndex = 0;
@@ -60,7 +86,9 @@ const GAME_NAMES = {
 
 function setScreen(screenId) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById(screenId).classList.add('active');
+    setTimeout(() => {
+        document.getElementById(screenId).classList.add('active');
+    }, 50);
 }
 
 function updateState(statusText, missionName = '-') {
@@ -77,7 +105,6 @@ function updateState(statusText, missionName = '-') {
         lastActive: Date.now()
     };
 
-    // Firebase Firestoreへ保存
     db.collection("terminal_sessions").doc(deviceId).set(sessionData);
 }
 
@@ -100,7 +127,6 @@ function startClientMode() {
     buildStageQueue();
 }
 
-// 5種類のゲームを12ステージに割り振る
 function buildStageQueue() {
     const games = ['g1', 'g2', 'g3', 'g4', 'g5'];
     stageQueue = [];
@@ -211,9 +237,11 @@ function runG2(level) {
     setScreen('screen-g2');
     updateState(`プレイ中 (${currentStageIndex}/12)`, GAME_NAMES['g2']);
     
+    const box = document.getElementById('reflex-box');
     const txt = document.getElementById('reflex-text');
     const sub = document.getElementById('reflex-subtext');
 
+    box.classList.remove('active-push');
     txt.innerText = 'WAIT...';
     txt.style.color = '#fff';
     sub.innerText = '';
@@ -235,6 +263,7 @@ function runG2(level) {
             }, 1000);
         } else {
             reflexState = 'PUSH';
+            box.classList.add('active-push');
             txt.innerText = 'PUSH!';
             txt.style.color = 'var(--accent-red)';
         }
@@ -242,7 +271,10 @@ function runG2(level) {
 }
 
 function handleReflexTap() {
+    const box = document.getElementById('reflex-box');
     const txt = document.getElementById('reflex-text');
+
+    box.classList.remove('active-push');
 
     if (reflexState === 'WAIT') {
         stageFirstTry = false;
@@ -258,6 +290,7 @@ function handleReflexTap() {
         setTimeout(() => runG2(stageQueue[currentStageIndex - 1].level), 900);
     } else if (reflexState === 'PUSH') {
         txt.innerText = 'SUCCESS';
+        txt.style.color = 'var(--accent-blue)';
         reflexState = 'DONE';
         if (stageFirstTry) correctStageCount++;
         setTimeout(nextStage, 600);
@@ -473,7 +506,6 @@ function startAdminMode() {
     setScreen('screen-admin');
     adminInterval = setInterval(refreshAdminUI, 1000);
 
-    // Firestoreからリアルタイム受信
     unsubscribeAdmin = db.collection("terminal_sessions").onSnapshot(snapshot => {
         const data = {};
         snapshot.forEach(doc => { data[doc.id] = doc.data(); });
