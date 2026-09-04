@@ -2,270 +2,70 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI CONTROL SYSTEM</title>
-    <style>
-        :root {
-            --main-color: #00FF41;
-            --bg-color: #000500;
-            --alert-color: #FF0000;
-        }
-
-        body, html {
-            margin: 0; padding: 0;
-            background-color: var(--bg-color);
-            color: var(--main-color);
-            font-family: 'Courier New', Courier, monospace;
-            overflow: hidden;
-            height: 100%;
-        }
-
-        /* デジタルレイン背景 */
-        #canvas-bg {
-            position: fixed; top: 0; left: 0; z-index: -1; opacity: 0.3;
-        }
-
-        /* グリッチアニメーション */
-        .glitch {
-            position: relative;
-            animation: glitch 1s linear infinite;
-        }
-        @keyframes glitch {
-            2%, 64% { transform: translate(2px,0) skew(0deg); }
-            4%, 60% { transform: translate(-2px,0) skew(0deg); }
-            62% { transform: translate(0,0) skew(5deg); }
-        }
-
-        /* ゲームコンテナ */
-        #app {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            height: 100vh; width: 100vw; text-align: center;
-        }
-
-        .screen { display: none; width: 90%; max-width: 600px; }
-        .active { display: block; }
-
-        .btn {
-            border: 1px solid var(--main-color);
-            padding: 15px 30px;
-            background: rgba(0, 255, 65, 0.1);
-            color: var(--main-color);
-            cursor: pointer;
-            margin: 10px;
-            text-transform: uppercase;
-        }
-
-        .btn:hover { background: var(--main-color); color: var(--bg-color); }
-
-        /* ゲーム固有のスタイル (Drone, Memory etc...) */
-        .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 20px; }
-        .node { border: 1px solid var(--main-color); height: 60px; line-height: 60px; cursor: pointer; }
-        .active-node { background: var(--main-color); color: var(--bg-color); }
-        
-        /* 警告画面 */
-        .alert-screen {
-            background-color: var(--alert-color);
-            color: white;
-            animation: blink 0.2s infinite;
-        }
-        @keyframes blink {
-            0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; }
-        }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PROJECT AI // SYSTEM CONTROL</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Firebase SDK (CDN) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 </head>
 <body>
 
-<canvas id="canvas-bg"></canvas>
+<canvas id="bg-canvas"></canvas>
 
 <div id="app">
-    <!-- セレクター画面 -->
-    <div id="screen-entry" class="screen active">
-        <h1 class="glitch">SYSTEM ACCESS</h1>
-        <button class="btn" onclick="initPlayer()">START MISSION</button>
-        <button class="btn" onclick="initAdmin()">ADMIN LOGIN</button>
-    </div>
-
-    <!-- ゲーム画面 (共通) -->
-    <div id="screen-game" class="screen">
-        <div id="game-header">
-            <span id="mission-title">MISSION 01</span>
-            <div id="timer">WAITING...</div>
+    <!-- 1. 初期選択画面 -->
+    <section id="screen-entry" class="screen active">
+        <div class="header-ui">SYSTEM READY // ACCESS POINT</div>
+        <h1 class="glitch-text">PROJECT AI</h1>
+        <p class="sub-text">侵入を開始するには下のボタンをタップしてください</p>
+        <div class="start-circle-outer" onclick="app.initPlayer()">
+            <div class="start-circle-inner">
+                <div class="power-icon"></div>
+                <span>MISSION START</span>
+            </div>
         </div>
-        <div id="game-content"></div>
-    </div>
+        <button class="admin-link" onclick="app.showAdminLogin()">ADMINISTRATOR LOGIN</button>
+    </section>
 
-    <!-- 最終警告画面 -->
-    <div id="screen-alert" class="screen">
-        <h1 style="font-size: 3rem;">SYSTEM OVERRIDE</h1>
-        <p class="glitch">AI暴走まで残りわずか...</p>
-        <div style="border: 2px solid white; padding: 20px; margin: 20px 0;">
-            <p>警告: AIの思考回路が物理層に干渉を開始しました。</p>
-            <p>直ちにこの教室内のメインサーバーを物理停止させてください！</p>
+    <!-- 2. ゲームコンテナ -->
+    <section id="screen-game" class="screen">
+        <div class="game-hud">
+            <div class="hud-left">MISSION: <span id="mission-num">01</span></div>
+            <div class="hud-center" id="mission-title">SYSTEM REBOOT</div>
+            <div class="hud-right">ID: <span id="display-id">--</span></div>
         </div>
-        <button class="btn" style="border-color:white; color:white;" onclick="location.reload()">REBOOT SYSTEM</button>
-    </div>
+        <div id="game-canvas-area">
+            <!-- ここにJSでゲーム内容が描画される -->
+        </div>
+    </section>
 
-    <!-- 管理画面 -->
-    <div id="screen-admin" class="screen">
-        <h2>ADMIN MONITOR</h2>
-        <div id="admin-list" style="text-align: left;"></div>
-        <button class="btn" onclick="location.reload()">BACK</button>
-    </div>
+    <!-- 3. AI侵略アラート画面 -->
+    <section id="screen-alert" class="screen">
+        <div class="alert-overlay"></div>
+        <div class="alert-content">
+            <h2 class="alert-title">CRITICAL ERROR</h2>
+            <div class="alert-msg">
+                <p>AIシステムの暴走を確認。物理層への干渉が開始されました。</p>
+                <p class="highlight">この端末の制御は既に奪われています。</p>
+                <p>至急、教室内にある「メインサーバー」を物理的にシャットダウンし、AIの拡散を阻止してください！</p>
+            </div>
+            <button class="reset-btn" onclick="location.reload()">TERMINAL REBOOT</button>
+        </div>
+    </section>
+
+    <!-- 4. 管理者画面 -->
+    <section id="screen-admin" class="screen">
+        <div class="admin-header">
+            <h2>REALTIME NODE MONITOR</h2>
+            <button onclick="location.reload()">LOGOUT</button>
+        </div>
+        <div id="admin-device-list" class="admin-grid">
+            <!-- デバイス状況がカードで並ぶ -->
+        </div>
+    </section>
 </div>
 
-<script>
-/* --------------------------------------------------
-   1. 背景アニメーション (Digital Rain)
--------------------------------------------------- */
-const canvas = document.getElementById('canvas-bg');
-const ctx = canvas.getContext('2d');
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
-const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()*&^%";
-const fontSize = 16;
-const columns = canvas.width / fontSize;
-const drops = Array(Math.floor(columns)).fill(1);
-
-function drawRain() {
-    ctx.fillStyle = "rgba(0, 5, 0, 0.05)";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#0F0";
-    ctx.font = fontSize + "px arial";
-    for (let i = 0; i < drops.length; i++) {
-        const text = letters.charAt(Math.floor(Math.random() * letters.length));
-        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
-        drops[i]++;
-    }
-}
-setInterval(drawRain, 33);
-
-/* --------------------------------------------------
-   2. 管理用通信 (Firebase等の代わりに簡易実装)
-   ※本来はFirebase Realtime Databaseを使うとリアルタイムで見れます
--------------------------------------------------- */
-let deviceId = "iPad-" + Math.floor(Math.random() * 1000);
-let startTime = Date.now();
-let currentProgress = "Entry";
-
-function updateStatus(status) {
-    currentProgress = status;
-    const data = {
-        id: deviceId,
-        progress: currentProgress,
-        wait: Math.floor((Date.now() - startTime) / 1000) + "s"
-    };
-    // 管理画面を開いているブラウザの localStorage に保存（擬似共有）
-    // 本番ではここで Firebase.set() を行う
-    localStorage.setItem(deviceId, JSON.stringify(data));
-}
-
-/* --------------------------------------------------
-   3. ゲームロジック
--------------------------------------------------- */
-let gameStage = 1;
-
-function initPlayer() {
-    showScreen('screen-game');
-    startMission1();
-}
-
-function showScreen(id) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-}
-
-// --- MISSION 1: SYSTEM REBOOT ---
-function startMission1() {
-    updateStatus("M1: REBOOTING");
-    const container = document.getElementById('game-content');
-    container.innerHTML = `<h3>SEQUENCE: <span id="seq-target">POWER > NETWORK > CORE</span></h3><div class="grid" id="m1-grid"></div>`;
-    
-    const nodes = ["CORE", "MEMORY", "POWER", "NETWORK"];
-    const target = ["POWER", "NETWORK", "CORE"];
-    let currentInput = [];
-
-    nodes.forEach(name => {
-        const div = document.createElement('div');
-        div.className = 'node';
-        div.innerText = name;
-        div.onclick = () => {
-            currentInput.push(name);
-            if(currentInput[currentInput.length-1] !== target[currentInput.length-1]) {
-                currentInput = []; // 間違えたらリセット
-            } else if(currentInput.length === target.length) {
-                startMission2(); // 次へ
-            }
-        };
-        document.getElementById('m1-grid').appendChild(div);
-    });
-}
-
-// --- MISSION 2: NEURAL REFLEX ---
-function startMission2() {
-    updateStatus("M2: REFLEX");
-    const container = document.getElementById('game-content');
-    container.innerHTML = `<h3>REACTION TEST</h3><div id="reflex-box" class="node" style="height:200px; line-height:200px; font-size:2rem;">WAIT...</div>`;
-    
-    const box = document.getElementById('reflex-box');
-    setTimeout(() => {
-        box.innerText = "PUSH!!";
-        box.style.background = "var(--main-color)";
-        box.style.color = "black";
-        const startTime = performance.now();
-        box.onclick = () => {
-            const time = ((performance.now() - startTime)/1000).toFixed(3);
-            box.innerText = `TIME: ${time}s`;
-            setTimeout(startMission3, 1500);
-        };
-    }, 2000 + Math.random() * 3000);
-}
-
-// --- MISSION 3: MEMORY CORE (簡略版) ---
-function startMission3() {
-    updateStatus("M3: MEMORY");
-    const container = document.getElementById('game-content');
-    container.innerHTML = `<h3>MEMORY CORE</h3><div class="grid" id="m3-grid"></div>`;
-    // 4x4のグリッドで光る場所を覚えさせるロジックをここに
-    setTimeout(startMission4, 2000); // デモ用にすぐ次へ
-}
-
-// --- MISSION 4: DRONE CONTROL ---
-function startMission4() {
-    updateStatus("M4: DRONE");
-    const container = document.getElementById('game-content');
-    container.innerHTML = `<h3>DRONE CONTROL</h3><div id="drone-map" style="font-family:monospace; white-space:pre; border:1px solid var(--main-color); padding:10px;">
-D . . . .
-. # # . .
-. . . # .
-. # . . G
-    </div><p>十字キー(代用ボタン)で操作</p>
-    <button class="btn" onclick="triggerAlert()">GOAL</button>`;
-}
-
-function triggerAlert() {
-    updateStatus("COMPLETED / ALERT");
-    showScreen('screen-alert');
-    document.body.classList.add('alert-screen');
-}
-
-/* --------------------------------------------------
-   4. 管理画面ロジック
--------------------------------------------------- */
-function initAdmin() {
-    showScreen('screen-admin');
-    setInterval(() => {
-        const list = document.getElementById('admin-list');
-        list.innerHTML = "";
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key.startsWith("iPad-")) {
-                const data = JSON.parse(localStorage.getItem(key));
-                list.innerHTML += `<p>[${data.id}] Status: ${data.progress} | Wait: ${data.wait}</p>`;
-            }
-        }
-    }, 1000);
-}
-</script>
+<script src="script.js"></script>
 </body>
 </html>
