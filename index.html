@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PROJECT AI // SYSTEM TERMINAL</title>
+    <title>PROJECT AI // システムターミナル</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <!-- Firebase SDK (v9 Compat) -->
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
@@ -15,53 +15,53 @@
     <canvas id="matrix-bg"></canvas>
 
     <div class="container" id="app-container">
-        <!-- Top Status Bar -->
+        <!-- 上部ステータスバー -->
         <div class="top-bar">
-            <span class="badge" id="player-display">PLAYER // NONE</span>
-            <span id="stage-counter">STAGE 0/12</span>
-            <span class="badge" id="status-badge">STATUS: IDLE</span>
+            <span class="badge" id="player-display">プレイヤー // 未設定</span>
+            <span id="stage-counter">ステージ 0/12</span>
+            <span class="badge" id="status-badge">状態: 待機中</span>
         </div>
 
         <div class="content">
-            <!-- 0. Mode Select -->
+            <!-- 0. モード選択画面 -->
             <div id="screen-select" class="screen active">
                 <h1 class="glitch-text">PROJECT AI</h1>
                 <p>システム端末のモードを選択してください</p>
                 <div>
-                    <button class="btn" onclick="goToNameInput()">GAME TERMINAL</button>
-                    <button class="btn" onclick="startAdminMode()">ADMIN DASHBOARD</button>
+                    <button class="btn" onclick="goToNameInput()">ゲーム画面へ</button>
+                    <button class="btn" onclick="startAdminMode()">管理者画面へ</button>
                 </div>
             </div>
 
-            <!-- Name Input Screen -->
+            <!-- プレイヤー登録画面 -->
             <div id="screen-name" class="screen">
-                <h2>PLAYER REGISTRATION</h2>
+                <h2>プレイヤー登録</h2>
                 <p>プレイヤー名（またはiPad番号）を入力してください</p>
                 <input type="text" id="player-name-input" placeholder="例: プレイヤーA / iPad-01" maxlength="15">
                 <br>
-                <button class="btn" onclick="submitName()">ENTER TERMINAL</button>
+                <button class="btn" onclick="submitName()">ゲームを開始する</button>
             </div>
 
-            <!-- 1. Mission Start Gate -->
+            <!-- 1. ミッション開始ゲート -->
             <div id="screen-start" class="screen">
-                <p style="letter-spacing: 2px;">SYSTEM READY // ACCESS POINT</p>
+                <p style="letter-spacing: 2px;">システム準備完了 // アクセスポイント</p>
                 <h1 class="glitch-text" style="margin-bottom: 30px;">PROJECT AI</h1>
                 <button class="btn btn-start" onclick="nextStage()">
                     <span style="font-size: 2rem;">⏻</span>
-                    <span>MISSION START</span>
+                    <span>ミッション開始</span>
                 </button>
             </div>
 
             <!-- 2. GAME 1: SYSTEM REBOOT -->
             <div id="screen-g1" class="screen">
-                <h2>MISSION: SYSTEM REBOOT</h2>
+                <h2>ミッション: SYSTEM REBOOT</h2>
                 <p id="g1-status">位置と順番を覚えてください</p>
                 <div class="reboot-grid" id="g1-nodes"></div>
             </div>
 
             <!-- 3. GAME 2: NEURAL REFLEX -->
             <div id="screen-g2" class="screen">
-                <h2>MISSION: NEURAL REFLEX</h2>
+                <h2>ミッション: NEURAL REFLEX</h2>
                 <p id="g2-status">「PUSH」に変わった瞬間にタップしてください</p>
                 <div id="reflex-box" onclick="handleReflexTap()">
                     <span id="reflex-text">WAIT...</span>
@@ -71,15 +71,15 @@
 
             <!-- 4. GAME 3: MEMORY CORE -->
             <div id="screen-g3" class="screen">
-                <h2>MISSION: MEMORY CORE</h2>
+                <h2>ミッション: MEMORY CORE</h2>
                 <p id="g3-status">光ったグリッドの配置を特定してください</p>
                 <div class="memory-grid" id="g3-grid"></div>
             </div>
 
-            <!-- 5. FINAL EMERGENCY OVERRIDE -->
+            <!-- 5. 警告画面 -->
             <div id="screen-alert" class="screen">
                 <h1 class="glitch-text alert-title">CRITICAL ERROR</h1>
-                <h2 style="color: #fff; margin-bottom: 20px;">AI OVERRIDE DETECTED</h2>
+                <h2 style="color: #fff; margin-bottom: 20px;">AIの侵略を検出</h2>
                 <div class="alert-box">
                     <span class="alert-text-bold">【警告】システム侵略完了</span><br>
                     端末側からの防衛プロトコルは完全に無効化されました。<br>
@@ -87,12 +87,33 @@
                     <strong>【緊急ミッション指令】</strong><br>
                     これより直接介入に移行する。直ちに教室内の【物理メインコア】へ向かい、AI暴走の強制停止コードを実行せよ！
                 </div>
-                <button class="btn btn-danger" style="margin-top: 25px;" onclick="resetTerminal()">SYSTEM RESET</button>
+                <button class="btn btn-danger" style="margin-top: 25px;" onclick="startLoadingPhase()">AI分析結果を確認</button>
             </div>
 
-            <!-- 6. ADMIN DASHBOARD -->
+            <!-- 5.5 ローディング＆結果発表画面 -->
+            <div id="screen-result" class="screen">
+                <div id="loading-box">
+                    <h2>AI適合度データ解析中...</h2>
+                    <p id="loading-status">システムログを集計しています</p>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="progress-bar"></div>
+                    </div>
+                </div>
+
+                <div id="result-box" style="display: none;">
+                    <h2 style="font-size: 1.8rem; margin-bottom: 10px;">AI討伐適合度 解析完了</h2>
+                    <p style="margin-bottom: 10px;">クリア数: <span id="correct-count" style="color: var(--main-cyan); font-weight: bold;">0</span> / 12 問</p>
+                    <div class="result-score-box">
+                        <div class="score-percent" id="score-percent">0%</div>
+                        <div class="score-rank" id="score-rank">RANK -</div>
+                    </div>
+                    <button class="btn btn-danger" style="margin-top: 20px;" onclick="resetTerminal()">最初の画面に戻る</button>
+                </div>
+            </div>
+
+            <!-- 6. 管理者画面 (日本語表記) -->
             <div id="screen-admin" class="screen">
-                <h2>SYSTEM CONTROL DASHBOARD</h2>
+                <h2>システム管理ダッシュボード</h2>
                 <p>リアルタイム稼働端末モニタリング</p>
                 <table class="admin-table">
                     <thead>
@@ -106,7 +127,7 @@
                     <tbody id="admin-list"></tbody>
                 </table>
                 <br>
-                <button class="btn" onclick="exitAdmin()">BACK TO MODE SELECT</button>
+                <button class="btn" onclick="exitAdmin()">モード選択に戻る</button>
             </div>
         </div>
     </div>
