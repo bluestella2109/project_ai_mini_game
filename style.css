@@ -34,7 +34,6 @@ body {
     font-weight: 700;
 }
 
-/* CRT走査線演出 */
 body::after {
     content: " ";
     display: block;
@@ -146,7 +145,7 @@ body::after {
     transform: scale(1);
 }
 
-/* アカウント入力ボックス */
+/* 持ち主入力ボックス */
 .login-box {
     margin-bottom: 25px;
     display: flex;
@@ -156,7 +155,7 @@ body::after {
 }
 
 .login-box label {
-    font-size: 1rem;
+    font-size: 1.1rem;
     color: var(--text-sub);
     letter-spacing: 2px;
 }
@@ -171,10 +170,10 @@ body::after {
     text-align: center;
     outline: none;
     box-shadow: var(--glow-red);
-    width: 280px;
+    width: 300px;
 }
 
-/* 赤グリッチタイトル (PROJECT AI) */
+/* 赤グリッチタイトル */
 h1.glitch-text {
     font-size: 5.2rem;
     font-weight: 900;
@@ -256,12 +255,12 @@ p {
     background: rgba(15, 0, 0, 0.8);
     border: 2px solid var(--accent-red);
     color: #ffffff;
-    padding: 16px 36px;
-    font-size: 1.2rem;
+    padding: 14px 24px;
+    font-size: 1.1rem;
     font-weight: 900;
     cursor: pointer;
     transition: all 0.2s ease;
-    margin: 8px;
+    margin: 6px;
     letter-spacing: 1px;
     box-shadow: var(--glow-red);
 }
@@ -306,7 +305,7 @@ p {
     100% { transform: scale(1.08); box-shadow: 0 0 45px rgba(255, 68, 85, 0.9); }
 }
 
-/* 全画面正誤判定オーバーレイ（フェードイン表示） */
+/* 全画面正誤判定オーバーレイ */
 .feedback-overlay {
     position: fixed;
     top: 0; left: 0;
@@ -410,8 +409,20 @@ p {
     animation: flashBox 0.15s infinite alternate;
 }
 
+#reflex-box.active-dont-touch {
+    border-color: #ffaa00;
+    color: #ffaa00;
+    box-shadow: 0 0 35px #ffaa00;
+    animation: flashBoxWarning 0.15s infinite alternate;
+}
+
 @keyframes flashBox {
     0% { background: rgba(255, 17, 51, 0.4); }
+    100% { background: rgba(0, 0, 0, 0.9); }
+}
+
+@keyframes flashBoxWarning {
+    0% { background: rgba(255, 170, 0, 0.4); }
     100% { background: rgba(0, 0, 0, 0.9); }
 }
 
@@ -448,29 +459,29 @@ p {
 .tune-container {
     background: rgba(0, 0, 0, 0.85);
     border: 2px solid var(--accent-red);
-    padding: 30px;
+    padding: 25px;
     width: 100%;
-    max-width: 420px;
+    max-width: 520px;
     box-shadow: var(--glow-red);
 }
 
 .tune-target {
     font-size: 1.3rem;
     color: var(--text-sub);
-    margin-bottom: 12px;
+    margin-bottom: 8px;
 }
 
 .tune-target span {
     color: #ffffff;
-    font-size: 1.6rem;
+    font-size: 1.8rem;
     font-weight: 900;
     text-shadow: var(--glow-red-bright);
 }
 
 .tune-current {
-    font-size: 4.5rem;
+    font-size: 4rem;
     font-weight: 900;
-    margin-bottom: 18px;
+    margin-bottom: 15px;
     color: #ffffff;
     text-shadow: var(--glow-red-bright);
 }
@@ -539,19 +550,20 @@ p {
         linear-gradient(90deg, rgba(0, 150, 255, 0.05) 1px, transparent 1px);
     background-size: 30px 30px;
     padding: 20px;
+    overflow-y: auto;
 }
 
 .admin-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 25px;
+    margin-bottom: 20px;
     border-bottom: 1px solid rgba(0, 150, 255, 0.2);
-    padding-bottom: 15px;
+    padding-bottom: 12px;
 }
 
 .admin-title {
-    font-size: 1.5rem;
+    font-size: 1.4rem;
     font-weight: 900;
     color: #ffffff;
     letter-spacing: 2px;
@@ -559,15 +571,15 @@ p {
 
 .admin-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
     width: 100%;
 }
 
 .node-card {
     background: rgba(8, 16, 32, 0.85);
     border: 1px solid rgba(0, 150, 255, 0.3);
-    padding: 18px;
+    padding: 16px;
     display: flex;
     flex-direction: column;
 }
@@ -576,7 +588,7 @@ p {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 15px;
+    margin-bottom: 12px;
 }
 
 .node-name {
@@ -586,7 +598,7 @@ p {
 }
 
 .node-status-badge {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     padding: 3px 8px;
     font-weight: 800;
 }
@@ -600,31 +612,31 @@ p {
 .node-main-status {
     background: rgba(0, 0, 0, 0.5);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 20px;
+    padding: 15px;
     text-align: center;
-    font-size: 1.6rem;
+    font-size: 1.4rem;
     font-weight: 900;
     color: #ffffff;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
 }
 
 .node-sub-status {
     background: rgba(0, 0, 0, 0.3);
     border: 1px solid rgba(255, 255, 255, 0.05);
-    padding: 10px;
+    padding: 8px;
     text-align: center;
-    font-size: 1rem;
+    font-size: 0.95rem;
     color: #8a9bbd;
-    margin-bottom: 15px;
+    margin-bottom: 12px;
 }
 
 .node-meta-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    font-size: 0.9rem;
+    gap: 8px;
+    font-size: 0.85rem;
     background: rgba(0, 0, 0, 0.3);
-    padding: 10px;
+    padding: 8px;
 }
 
 .node-meta-item {
@@ -634,5 +646,5 @@ p {
 .node-meta-value {
     color: #ffffff;
     font-weight: 800;
-    margin-top: 4px;
+    margin-top: 2px;
 }
