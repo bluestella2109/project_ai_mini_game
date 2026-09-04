@@ -1,12 +1,12 @@
 :root {
-    --bg-color: #030814;
-    --grid-color: rgba(0, 180, 216, 0.08);
+    --bg-color: #020408; /* より深い純黒に近い背景 */
+    --grid-color: rgba(0, 180, 216, 0.04); /* グリッド線を少し暗めに */
     --main-cyan: #00f0ff;
-    --main-blue: #0077ff;
+    --main-blue: #0055ff;
     --alert-red: #ff0055;
-    --card-bg: rgba(6, 15, 33, 0.85);
-    --card-border: rgba(0, 240, 255, 0.3);
-    --text-color: #d1f5ff;
+    --card-bg: rgba(8, 10, 15, 0.95); /* カード背景を黒寄りに変更 */
+    --card-border: rgba(0, 240, 255, 0.2);
+    --text-color: #e0f7ff;
 }
 
 * {
@@ -50,7 +50,7 @@ body {
     top: 0; left: 0;
     width: 100%; height: 100%;
     z-index: 1;
-    opacity: 0.12;
+    opacity: 0.08; /* 背景アニメーションも暗めに調整 */
     pointer-events: none;
 }
 
@@ -61,8 +61,8 @@ body {
     max-width: 900px;
     height: 88vh;
     background: var(--card-bg);
-    border: 1px solid var(--main-cyan);
-    box-shadow: 0 0 25px rgba(0, 240, 255, 0.15), inset 0 0 15px rgba(0, 240, 255, 0.05);
+    border: 1px solid var(--card-border);
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.8), inset 0 0 15px rgba(0, 0, 0, 0.5);
     border-radius: 8px;
     display: flex;
     flex-direction: column;
@@ -71,23 +71,23 @@ body {
 
 .container.alert-mode {
     border-color: var(--alert-red);
-    box-shadow: 0 0 40px rgba(255, 0, 85, 0.4), inset 0 0 20px rgba(255, 0, 85, 0.2);
+    box-shadow: 0 0 40px rgba(255, 0, 85, 0.3), inset 0 0 20px rgba(0, 0, 0, 0.8);
     animation: alert-pulse 1.5s infinite alternate;
 }
 
 @keyframes alert-pulse {
-    0% { background: rgba(20, 4, 10, 0.9); }
-    100% { background: rgba(40, 5, 15, 0.95); }
+    0% { background: rgba(10, 2, 5, 0.95); }
+    100% { background: rgba(20, 3, 8, 0.98); }
 }
 
 .top-bar {
     height: 50px;
-    border-bottom: 1px solid var(--card-border);
+    border-bottom: 1px solid rgba(0, 240, 255, 0.15);
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 0 20px;
-    background: rgba(0, 0, 0, 0.3);
+    background: rgba(0, 0, 0, 0.6);
     font-family: 'Orbitron', sans-serif;
     font-size: 0.85rem;
 }
@@ -102,13 +102,13 @@ body {
     color: var(--main-cyan);
     padding: 4px 12px;
     border-radius: 4px;
-    background: rgba(0, 240, 255, 0.1);
+    background: rgba(0, 240, 255, 0.05);
 }
 
 .badge-danger {
     border-color: var(--alert-red);
     color: var(--alert-red);
-    background: rgba(255, 0, 85, 0.1);
+    background: rgba(255, 0, 85, 0.05);
 }
 
 .content {
@@ -153,14 +153,14 @@ h2 {
 }
 
 p {
-    color: rgba(209, 245, 255, 0.8);
+    color: rgba(209, 245, 255, 0.7);
     margin-bottom: 25px;
     font-size: 1.1rem;
 }
 
 input[type="text"] {
-    background: rgba(0, 240, 255, 0.05);
-    border: 1px solid var(--main-cyan);
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--card-border);
     color: var(--main-cyan);
     padding: 12px 20px;
     font-family: 'Orbitron', sans-serif;
@@ -174,12 +174,13 @@ input[type="text"] {
 }
 
 input[type="text"]:focus {
-    box-shadow: 0 0 15px var(--main-cyan);
+    border-color: var(--main-cyan);
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
 }
 
 .btn {
-    background: rgba(0, 240, 255, 0.05);
-    border: 1px solid var(--main-cyan);
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid var(--card-border);
     color: var(--main-cyan);
     padding: 14px 32px;
     font-family: 'Orbitron', sans-serif;
@@ -188,7 +189,6 @@ input[type="text"]:focus {
     cursor: pointer;
     border-radius: 4px;
     transition: all 0.25s ease;
-    box-shadow: 0 0 10px rgba(0, 240, 255, 0.1);
     margin: 8px;
 }
 
@@ -203,7 +203,8 @@ input[type="text"]:focus {
     height: 180px;
     border-radius: 50%;
     border: 2px solid var(--main-cyan);
-    box-shadow: 0 0 30px rgba(0, 240, 255, 0.3), inset 0 0 20px rgba(0, 240, 255, 0.2);
+    background: rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.2), inset 0 0 15px rgba(0, 240, 255, 0.1);
     font-size: 1.1rem;
     font-weight: 700;
     display: flex;
@@ -216,6 +217,7 @@ input[type="text"]:focus {
 .btn-danger {
     border-color: var(--alert-red);
     color: var(--alert-red);
+    background: rgba(0, 0, 0, 0.6);
 }
 
 .btn-danger:hover {
@@ -234,7 +236,7 @@ input[type="text"]:focus {
 }
 
 .reboot-node {
-    background: rgba(0, 240, 255, 0.03);
+    background: rgba(0, 0, 0, 0.5);
     border: 1px solid var(--card-border);
     color: #fff;
     padding: 22px;
@@ -263,8 +265,8 @@ input[type="text"]:focus {
     width: 100%;
     max-width: 450px;
     height: 220px;
-    border: 2px solid var(--main-cyan);
-    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--card-border);
+    background: rgba(0, 0, 0, 0.6);
     border-radius: 6px;
     display: flex;
     flex-direction: column;
@@ -273,7 +275,6 @@ input[type="text"]:focus {
     font-family: 'Orbitron', sans-serif;
     font-size: 2.2rem;
     cursor: pointer;
-    box-shadow: inset 0 0 15px rgba(0, 240, 255, 0.1);
 }
 
 #reflex-subtext {
@@ -292,7 +293,7 @@ input[type="text"]:focus {
 }
 
 .memory-tile {
-    background: rgba(0, 240, 255, 0.04);
+    background: rgba(0, 0, 0, 0.5);
     border: 1px solid var(--card-border);
     border-radius: 4px;
     cursor: pointer;
@@ -314,7 +315,7 @@ input[type="text"]:focus {
     max-width: 580px;
     line-height: 1.8;
     text-align: left;
-    background: rgba(255, 0, 85, 0.05);
+    background: rgba(0, 0, 0, 0.7);
     padding: 20px;
     border: 1px solid var(--alert-red);
     border-radius: 4px;
@@ -330,12 +331,11 @@ input[type="text"]:focus {
     width: 100%;
     max-width: 400px;
     height: 20px;
-    border: 1px solid var(--main-cyan);
+    border: 1px solid var(--card-border);
     border-radius: 10px;
     overflow: hidden;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.8);
     margin: 20px auto;
-    box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
 }
 
 .progress-bar {
@@ -347,12 +347,11 @@ input[type="text"]:focus {
 }
 
 .result-score-box {
-    border: 2px solid var(--main-cyan);
+    border: 1px solid var(--main-cyan);
     padding: 20px 40px;
     border-radius: 8px;
-    background: rgba(0, 240, 255, 0.05);
+    background: rgba(0, 0, 0, 0.7);
     margin: 15px 0;
-    box-shadow: inset 0 0 15px rgba(0, 240, 255, 0.1);
 }
 
 .score-percent {
@@ -377,6 +376,7 @@ input[type="text"]:focus {
     border-collapse: collapse;
     margin-top: 15px;
     font-size: 0.95rem;
+    background: rgba(0, 0, 0, 0.4);
 }
 
 .admin-table th, .admin-table td {
@@ -386,7 +386,7 @@ input[type="text"]:focus {
 }
 
 .admin-table th {
-    background: rgba(0, 240, 255, 0.1);
+    background: rgba(0, 0, 0, 0.8);
     color: var(--main-cyan);
     font-family: 'Orbitron', sans-serif;
 }
