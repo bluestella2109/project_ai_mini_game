@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PROJECT AI - TERMINAL SYSTEM</title>
     <link rel="stylesheet" href="style.css">
+    
+    <!-- Firebase (App / Firestore) CDN -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
@@ -104,7 +108,7 @@
                 </div>
             </div>
 
-            <!-- リザルト画面 (管理者画面ボタン削除済み) -->
+            <!-- リザルト画面 -->
             <div id="screen-result" class="screen">
                 <h2>EXECUTION RESULT</h2>
                 <p>正解数: <span id="correct-count" class="accent-text">0</span> / 12</p>
