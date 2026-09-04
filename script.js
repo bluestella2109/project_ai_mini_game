@@ -1,11 +1,11 @@
 // --- Firebase Config (④ Firebaseを使う場合ここに自分の設定を貼る) ---
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyAIRFvaF397DOiNARhoG6B7w-xdT7bGNFk",
+    authDomain: "sf-minigame.firebaseapp.com",
+    projectId: "sf-minigame",
+    storageBucket: "sf-minigame.firebasestorage.app",
+    messagingSenderId: "751927738343",
+    appId: "1:751927738343:web:91d5911881454d7c414742"
 };
 
 let db = null;
