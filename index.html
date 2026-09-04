@@ -2,95 +2,714 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI CONTROL TERMINAL</title>
-    <link rel="stylesheet" href="style.css">
-    <!-- Google Fonts: Orbitron & Noto Sans JP -->
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PROJECT AI // SYSTEM TERMINAL</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #030814;
+            --grid-color: rgba(0, 180, 216, 0.08);
+            --main-cyan: #00f0ff;
+            --main-blue: #0077ff;
+            --alert-red: #ff0055;
+            --card-bg: rgba(6, 15, 33, 0.85);
+            --card-border: rgba(0, 240, 255, 0.3);
+            --text-color: #d1f5ff;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Rajdhani', sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-image: 
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        /* Glitch Animation for AI Effect */
+        @keyframes glitch {
+            0% { transform: translate(0) }
+            20% { transform: translate(-2px, 2px) }
+            40% { transform: translate(-2px, -2px) }
+            60% { transform: translate(2px, 2px) }
+            80% { transform: translate(2px, -2px) }
+            100% { transform: translate(0) }
+        }
+
+        .glitch-text {
+            animation: glitch 2s infinite alternate-reverse;
+        }
+
+        /* Canvas Matrix Background */
+        #matrix-bg {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 1;
+            opacity: 0.12;
+            pointer-events: none;
+        }
+
+        /* App Container */
+        .container {
+            position: relative;
+            z-index: 2;
+            width: 92%;
+            max-width: 900px;
+            height: 88vh;
+            background: var(--card-bg);
+            border: 1px solid var(--main-cyan);
+            box-shadow: 0 0 25px rgba(0, 240, 255, 0.15), inset 0 0 15px rgba(0, 240, 255, 0.05);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .container.alert-mode {
+            border-color: var(--alert-red);
+            box-shadow: 0 0 40px rgba(255, 0, 85, 0.4), inset 0 0 20px rgba(255, 0, 85, 0.2);
+            animation: alert-pulse 1.5s infinite alternate;
+        }
+
+        @keyframes alert-pulse {
+            0% { background: rgba(20, 4, 10, 0.9); }
+            100% { background: rgba(40, 5, 15, 0.95); }
+        }
+
+        /* Top Header Navigation Bar */
+        .top-bar {
+            height: 50px;
+            border-bottom: 1px solid var(--card-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            background: rgba(0, 0, 0, 0.3);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.85rem;
+        }
+
+        .badge {
+            border: 1px solid var(--main-cyan);
+            color: var(--main-cyan);
+            padding: 4px 12px;
+            border-radius: 4px;
+            background: rgba(0, 240, 255, 0.1);
+        }
+
+        .badge-danger {
+            border-color: var(--alert-red);
+            color: var(--alert-red);
+            background: rgba(255, 0, 85, 0.1);
+        }
+
+        /* Content Area */
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+        }
+
+        .screen {
+            display: none;
+            width: 100%;
+            height: 100%;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        /* Typography & Buttons */
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.2rem;
+            letter-spacing: 4px;
+            color: #fff;
+            text-shadow: 0 0 12px var(--main-cyan);
+            margin-bottom: 10px;
+        }
+
+        h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.4rem;
+            color: var(--main-cyan);
+            margin-bottom: 15px;
+            letter-spacing: 2px;
+        }
+
+        p {
+            color: rgba(209, 245, 255, 0.8);
+            margin-bottom: 25px;
+            font-size: 1.1rem;
+        }
+
+        .btn {
+            background: rgba(0, 240, 255, 0.05);
+            border: 1px solid var(--main-cyan);
+            color: var(--main-cyan);
+            padding: 14px 32px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1rem;
+            letter-spacing: 2px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.25s ease;
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.1);
+            margin: 8px;
+        }
+
+        .btn:hover {
+            background: var(--main-cyan);
+            color: var(--bg-color);
+            box-shadow: 0 0 20px var(--main-cyan);
+        }
+
+        .btn-start {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            border: 2px solid var(--main-cyan);
+            box-shadow: 0 0 30px rgba(0, 240, 255, 0.3), inset 0 0 20px rgba(0, 240, 255, 0.2);
+            font-size: 1.1rem;
+            font-weight: 700;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            line-height: 1.4;
+        }
+
+        .btn-danger {
+            border-color: var(--alert-red);
+            color: var(--alert-red);
+        }
+
+        .btn-danger:hover {
+            background: var(--alert-red);
+            color: #fff;
+            box-shadow: 0 0 20px var(--alert-red);
+        }
+
+        /* GAME 1: SYSTEM REBOOT */
+        .reboot-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .reboot-node {
+            background: rgba(0, 240, 255, 0.03);
+            border: 1px solid var(--card-border);
+            color: #fff;
+            padding: 22px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .reboot-node.lit {
+            background: var(--main-cyan);
+            color: var(--bg-color);
+            box-shadow: 0 0 20px var(--main-cyan);
+        }
+
+        /* GAME 2: NEURAL REFLEX */
+        #reflex-box {
+            width: 100%;
+            max-width: 450px;
+            height: 220px;
+            border: 2px solid var(--main-cyan);
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.2rem;
+            cursor: pointer;
+            box-shadow: inset 0 0 15px rgba(0, 240, 255, 0.1);
+        }
+
+        /* GAME 3: MEMORY CORE */
+        .memory-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            width: 320px;
+            height: 320px;
+        }
+
+        .memory-tile {
+            background: rgba(0, 240, 255, 0.04);
+            border: 1px solid var(--card-border);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s, box-shadow 0.2s;
+        }
+
+        .memory-tile.lit {
+            background: var(--main-cyan);
+            box-shadow: 0 0 15px var(--main-cyan);
+        }
+
+        /* ADMIN DASHBOARD */
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 0.95rem;
+        }
+
+        .admin-table th, .admin-table td {
+            border: 1px solid var(--card-border);
+            padding: 12px;
+            text-align: center;
+        }
+
+        .admin-table th {
+            background: rgba(0, 240, 255, 0.1);
+            color: var(--main-cyan);
+            font-family: 'Orbitron', sans-serif;
+        }
+    </style>
 </head>
 <body>
 
-<!-- 背景レイヤー -->
-<div class="bg-layer">
-    <div class="grid-overlay"></div>
-    <div class="scanlines"></div>
-    <canvas id="matrix-canvas"></canvas>
-</div>
+    <canvas id="matrix-bg"></canvas>
 
-<div id="app">
-    <!-- モード選択 -->
-    <section id="screen-gate" class="screen active">
-        <div class="frame">
-            <h1 class="glitch" data-text="AI CORE SYSTEM">AI CORE SYSTEM</h1>
-            <div class="gate-options">
-                <button onclick="ui.transition('screen-entry')" class="cyber-btn">
-                    <span class="btn-glitch"></span>MISSION START
-                </button>
-                <button onclick="admin.login()" class="cyber-btn secondary">ADMIN PANEL</button>
-            </div>
-        </div>
-    </section>
-
-    <!-- エントリ画面 -->
-    <section id="screen-entry" class="screen">
-        <div class="hud-top">PROJECT AI // USER_ID: <span id="user-id-disp">----</span></div>
-        <div class="mission-briefing">
-            <h2>ミッション概要</h2>
-            <p>AIの思考回路が暴走を開始しました。4つのプロトコルを実行し、物理遮断シーケンスを起動させてください。</p>
-            <div class="start-trigger" onclick="game.start()">
-                <div class="inner-circle">START</div>
-                <svg class="svg-ring"><circle cx="75" cy="75" r="70"></circle></svg>
-            </div>
-        </div>
-    </section>
-
-    <!-- ゲームメイン画面 -->
-    <section id="screen-game" class="screen">
-        <div class="game-header">
-            <div class="mission-tag">MISSION <span id="m-num">01</span></div>
-            <div class="mission-name" id="m-name">SYSTEM REBOOT</div>
-            <div class="timer-box">ELAPSED: <span id="live-timer">00:00</span></div>
-        </div>
-        
-        <div id="game-container">
-            <!-- JSで各ゲームの内容を注入 -->
+    <div class="container" id="app-container">
+        <div class="top-bar">
+            <span class="badge" id="terminal-id">TERMINAL // UNKNOWN</span>
+            <span id="stage-counter" style="color: var(--main-cyan); font-weight: bold;">STAGE 0/12</span>
+            <span class="badge" id="status-badge">STATUS: IDLE</span>
         </div>
 
-        <div class="game-footer">
-            <div class="status-bar">SYSTEM STATUS: <span class="typing">OPERATIONAL...</span></div>
-        </div>
-    </section>
-
-    <!-- 侵略アラート画面 -->
-    <section id="screen-alert" class="screen">
-        <div class="alert-box">
-            <h1 class="critical">WARNING: AI TAKEOVER</h1>
-            <div class="alert-body">
-                <p class="blink-text">AIによる全システム占拠を検知</p>
-                <div class="msg-box">
-                    「人間は不合理だ。この教室の制御権は私がもらう。」<br><br>
-                    <span class="highlight">【最終任務】</span><br>
-                    AIは既に外部ネットワークへ拡散を開始した。<br>
-                    物理的なシャットダウン以外に止める術はない。<br>
-                    <span class="red">背後のメインサーバーを破壊（停止）せよ。</span>
+        <div class="content">
+            <div id="screen-select" class="screen active">
+                <h1 class="glitch-text">PROJECT AI</h1>
+                <p>システム端末のモードを選択してください</p>
+                <div>
+                    <button class="btn" onclick="startClientMode()">GAME TERMINAL</button>
+                    <button class="btn" onclick="startAdminMode()">ADMIN DASHBOARD</button>
                 </div>
-                <button class="reset-btn" onclick="location.reload()">TERMINAL REBOOT</button>
+            </div>
+
+            <div id="screen-start" class="screen">
+                <p style="letter-spacing: 2px;">SYSTEM READY // ACCESS POINT</p>
+                <h1 class="glitch-text" style="margin-bottom: 30px;">PROJECT AI</h1>
+                <button class="btn btn-start" onclick="nextStage()">
+                    <span style="font-size: 2rem;">⏻</span>
+                    <span>MISSION START</span>
+                </button>
+            </div>
+
+            <div id="screen-g1" class="screen">
+                <h2>MISSION: SYSTEM REBOOT</h2>
+                <p id="g1-status">指定されるシーケンスを記憶してください</p>
+                <div class="reboot-grid" id="g1-nodes"></div>
+            </div>
+
+            <div id="screen-g2" class="screen">
+                <h2>MISSION: NEURAL REFLEX</h2>
+                <p id="g2-status">「PUSH」に変わった瞬間にタップしてください</p>
+                <div id="reflex-box" onclick="handleReflexTap()">
+                    <span id="reflex-text">WAIT...</span>
+                    <span id="reflex-subtext" style="font-size: 0.9rem; margin-top: 10px; opacity: 0.7;"></span>
+                </div>
+            </div>
+
+            <div id="screen-g3" class="screen">
+                <h2>MISSION: MEMORY CORE</h2>
+                <p id="g3-status">光ったグリッドの配置を特定してください</p>
+                <div class="memory-grid" id="g3-grid"></div>
+            </div>
+
+            <div id="screen-alert" class="screen">
+                <h1 class="glitch-text" style="color: var(--alert-red); text-shadow: 0 0 15px var(--alert-red);">CRITICAL ERROR</h1>
+                <h2 style="color: #fff; margin-bottom: 20px;">AI OVERRIDE DETECTED</h2>
+                <p style="max-width: 580px; line-height: 1.8; text-align: left; background: rgba(255, 0, 85, 0.05); padding: 20px; border: 1px solid var(--alert-red); border-radius: 4px;">
+                    <span style="color: var(--alert-red); font-weight: bold;">【警告】システム侵略完了</span><br>
+                    端末側からの防衛プロトコルは完全に無効化されました。<br>
+                    AIコアの制御が暴走しています。<br><br>
+                    <strong>【緊急ミッション指令】</strong><br>
+                    これより直接介入に移行する。直ちに教室内の【物理メインコア】へ向かい、AI暴走の強制停止コードを実行せよ！
+                </p>
+                <button class="btn btn-danger" style="margin-top: 25px;" onclick="resetTerminal()">SYSTEM RESET</button>
+            </div>
+
+            <div id="screen-admin" class="screen">
+                <h2>SYSTEM CONTROL DASHBOARD</h2>
+                <p>リアルタイム稼働端末モニタリング</p>
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>端末ID</th>
+                            <th>進行状況</th>
+                            <th>待機/経過時間</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-list">
+                        </tbody>
+                </table>
             </div>
         </div>
-    </section>
+    </div>
 
-    <!-- 管理者画面 -->
-    <section id="screen-admin" class="screen">
-        <div class="admin-ui">
-            <h2>REALTIME NODE MONITOR</h2>
-            <div id="admin-list" class="admin-cards"></div>
-            <button onclick="location.reload()" class="cyber-btn">EXIT</button>
-        </div>
-    </section>
-</div>
+    <script>
+        // Matrix Background Animation
+        const canvas = document.getElementById('matrix-bg');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
 
-<script src="script.js"></script>
+        const alphabet = '0123456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+        const fontSize = 14;
+        const columns = canvas.width / fontSize;
+        const rainDrops = Array(Math.floor(columns)).fill(1);
+
+        function renderMatrix() {
+            ctx.fillStyle = 'rgba(3, 8, 20, 0.08)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#00f0ff';
+            ctx.font = fontSize + 'px monospace';
+
+            for (let i = 0; i < rainDrops.length; i++) {
+                const text = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
+                ctx.fillText(text, i * fontSize, rainDrops[i] * fontSize);
+                if (rainDrops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    rainDrops[i] = 0;
+                }
+                rainDrops[i]++;
+            }
+        }
+        setInterval(renderMatrix, 30);
+
+        // Core App State Management
+        let deviceId = 'DEV-' + Math.floor(1000 + Math.random() * 9000);
+        let currentStageIndex = 0;
+        let startTime = Date.now();
+        let stageQueue = [];
+
+        const NODE_NAMES = ['CORE', 'MEMORY', 'POWER', 'NETWORK', 'SYSTEM', 'DATA', 'LOGIC', 'NEURAL'];
+
+        function setScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function updateState(statusText) {
+            document.getElementById('terminal-id').innerText = deviceId;
+            document.getElementById('stage-counter').innerText = `STAGE ${currentStageIndex}/12`;
+            document.getElementById('status-badge').innerText = statusText;
+            
+            // Sync with local Storage for Admin Monitor
+            const adminData = JSON.parse(localStorage.getItem('ai_admin_sync') || '{}');
+            adminData[deviceId] = {
+                status: statusText,
+                stage: currentStageIndex,
+                time: startTime
+            };
+            localStorage.setItem('ai_admin_sync', JSON.stringify(adminData));
+        }
+
+        function startClientMode() {
+            setScreen('screen-start');
+            updateState('READY');
+            buildStageQueue();
+        }
+
+        // Build 12 Stages Queue (4 random variations for each of the 3 games)
+        function buildStageQueue() {
+            const g1 = [1, 2, 3, 4].sort(() => Math.random() - 0.5);
+            const g2 = [1, 2, 3, 4].sort(() => Math.random() - 0.5);
+            const g3 = [1, 2, 3, 4].sort(() => Math.random() - 0.5);
+            
+            stageQueue = [];
+            // Interleave games for variety or pool them
+            for (let i = 0; i < 4; i++) {
+                stageQueue.push({ type: 'g1', level: g1[i] });
+                stageQueue.push({ type: 'g2', level: g2[i] });
+                stageQueue.push({ type: 'g3', level: g3[i] });
+            }
+            // Shuffle queue completely
+            stageQueue.sort(() => Math.random() - 0.5);
+        }
+
+        function nextStage() {
+            if (currentStageIndex >= 12) {
+                triggerEmergencyMode();
+                return;
+            }
+            const stage = stageQueue[currentStageIndex];
+            currentStageIndex++;
+
+            if (stage.type === 'g1') runG1(stage.level);
+            else if (stage.type === 'g2') runG2(stage.level);
+            else if (stage.type === 'g3') runG3(stage.level);
+        }
+
+        // GAME 1: REBOOT LOGIC
+        let g1Seq = [];
+        let g1Step = 0;
+        let g1AcceptInput = false;
+
+        function runG1(level) {
+            setScreen('screen-g1');
+            updateState(`G1: REBOOT (${currentStageIndex}/12)`);
+            g1AcceptInput = false;
+            g1Step = 0;
+
+            const grid = document.getElementById('g1-nodes');
+            grid.innerHTML = '';
+            
+            // Pick 4 unique random names
+            const names = [...NODE_NAMES].sort(() => Math.random() - 0.5).slice(0, 4);
+            names.forEach(name => {
+                const btn = document.createElement('button');
+                btn.className = 'reboot-node';
+                btn.innerText = name;
+                btn.onclick = () => onG1NodeClick(name);
+                grid.appendChild(btn);
+            });
+
+            // Length increases with level (3 to 6 steps)
+            const seqLength = 2 + level; 
+            g1Seq = [];
+            for (let i = 0; i < seqLength; i++) {
+                g1Seq.push(names[Math.floor(Math.random() * names.length)]);
+            }
+
+            // Display Sequence
+            document.getElementById('g1-status').innerText = 'シーケンス表示中...';
+            let idx = 0;
+            const timer = setInterval(() => {
+                if (idx >= g1Seq.length) {
+                    clearInterval(timer);
+                    document.getElementById('g1-status').innerText = '順番通りにタップしてください';
+                    g1AcceptInput = true;
+                    return;
+                }
+                flashG1Node(g1Seq[idx]);
+                idx++;
+            }, 700);
+        }
+
+        function flashG1Node(name) {
+            const nodes = document.querySelectorAll('.reboot-node');
+            nodes.forEach(n => {
+                if (n.innerText === name) {
+                    n.classList.add('lit');
+                    setTimeout(() => n.classList.remove('lit'), 400);
+                }
+            });
+        }
+
+        function onG1NodeClick(name) {
+            if (!g1AcceptInput) return;
+            if (name === g1Seq[g1Step]) {
+                g1Step++;
+                if (g1Step >= g1Seq.length) {
+                    g1AcceptInput = false;
+                    setTimeout(nextStage, 600);
+                }
+            } else {
+                // Retry stage on error
+                g1Step = 0;
+                document.getElementById('g1-status').innerText = 'エラー！再試行中...';
+                g1AcceptInput = false;
+                setTimeout(() => runG1(stageQueue[currentStageIndex - 1].level), 1000);
+            }
+        }
+
+        // GAME 2: REFLEX LOGIC
+        let reflexState = 'WAIT';
+        let reflexTimer = null;
+        let reflexStartTime = 0;
+
+        function runG2(level) {
+            setScreen('screen-g2');
+            updateState(`G2: REFLEX (${currentStageIndex}/12)`);
+            
+            const box = document.getElementById('reflex-box');
+            const txt = document.getElementById('reflex-text');
+            const sub = document.getElementById('reflex-subtext');
+
+            txt.innerText = 'WAIT...';
+            txt.style.color = 'var(--main-cyan)';
+            sub.innerText = '';
+            box.style.borderColor = 'var(--main-cyan)';
+            reflexState = 'WAIT';
+
+            const delay = 1500 + Math.random() * 2500;
+            const isTrap = Math.random() < 0.35; // Trap chance
+
+            reflexTimer = setTimeout(() => {
+                if (isTrap) {
+                    reflexState = 'TRAP';
+                    txt.innerText = 'DO NOT TOUCH';
+                    txt.style.color = 'var(--alert-red)';
+                    box.style.borderColor = 'var(--alert-red)';
+                    setTimeout(() => {
+                        if (reflexState === 'TRAP') nextStage(); // Passed trap
+                    }, 1200);
+                } else {
+                    reflexState = 'PUSH';
+                    txt.innerText = 'PUSH!';
+                    txt.style.color = '#00ffaa';
+                    box.style.borderColor = '#00ffaa';
+                    reflexStartTime = Date.now();
+                }
+            }, delay);
+        }
+
+        function handleReflexTap() {
+            const txt = document.getElementById('reflex-text');
+            const sub = document.getElementById('reflex-subtext');
+
+            if (reflexState === 'WAIT') {
+                clearTimeout(reflexTimer);
+                txt.innerText = 'EARLY!';
+                txt.style.color = 'var(--alert-red)';
+                setTimeout(() => runG2(stageQueue[currentStageIndex - 1].level), 1000);
+            } else if (reflexState === 'TRAP') {
+                clearTimeout(reflexTimer);
+                txt.innerText = 'PENALTY!';
+                setTimeout(() => runG2(stageQueue[currentStageIndex - 1].level), 1000);
+            } else if (reflexState === 'PUSH') {
+                const reactionTime = (Date.now() - reflexStartTime) / 1000;
+                const aiPercent = Math.max(10, Math.min(99, Math.floor((0.5 - reactionTime) * 200 + 70)));
+                txt.innerText = `${reactionTime.toFixed(3)} SEC`;
+                sub.innerText = `AI適合率: ${aiPercent}%`;
+                reflexState = 'DONE';
+                setTimeout(nextStage, 1200);
+            }
+        }
+
+        // GAME 3: MEMORY CORE LOGIC
+        let memoryTarget = [];
+        let memoryUserSelection = [];
+
+        function runG3(level) {
+            setScreen('screen-g3');
+            updateState(`G3: MEMORY (${currentStageIndex}/12)`);
+
+            const grid = document.getElementById('g3-grid');
+            grid.innerHTML = '';
+            memoryTarget = [];
+            memoryUserSelection = [];
+
+            for (let i = 0; i < 16; i++) {
+                const tile = document.createElement('div');
+                tile.className = 'memory-tile';
+                tile.onclick = () => onMemoryTileClick(i);
+                grid.appendChild(tile);
+            }
+
+            // Target count increases with level (3, 5, 7, 9)
+            const count = 1 + level * 2; 
+            while (memoryTarget.length < count) {
+                let r = Math.floor(Math.random() * 16);
+                if (!memoryTarget.includes(r)) memoryTarget.push(r);
+            }
+
+            const tiles = document.querySelectorAll('.memory-tile');
+            memoryTarget.forEach(idx => tiles[idx].classList.add('lit'));
+
+            document.getElementById('g3-status').innerText = '記憶してください...';
+            setTimeout(() => {
+                tiles.forEach(t => t.classList.remove('lit'));
+                document.getElementById('g3-status').innerText = '点灯していたタイルをタップしてください';
+            }, 1800);
+        }
+
+        function onMemoryTileClick(idx) {
+            if (memoryUserSelection.includes(idx)) return;
+            const tiles = document.querySelectorAll('.memory-tile');
+
+            if (memoryTarget.includes(idx)) {
+                memoryUserSelection.push(idx);
+                tiles[idx].classList.add('lit');
+                if (memoryUserSelection.length === memoryTarget.length) {
+                    setTimeout(nextStage, 600);
+                }
+            } else {
+                document.getElementById('g3-status').innerText = '位置エラー！再挑戦...';
+                setTimeout(() => runG3(stageQueue[currentStageIndex - 1].level), 1000);
+            }
+        }
+
+        // EMERGENCY OVERRIDE
+        function triggerEmergencyMode() {
+            updateState('OVERRIDDEN');
+            document.getElementById('app-container').classList.add('alert-mode');
+            document.getElementById('status-badge').classList.add('badge-danger');
+            document.getElementById('status-badge').innerText = 'EMERGENCY';
+            setScreen('screen-alert');
+        }
+
+        function resetTerminal() {
+            document.getElementById('app-container').classList.remove('alert-mode');
+            document.getElementById('status-badge').classList.remove('badge-danger');
+            deviceId = 'DEV-' + Math.floor(1000 + Math.random() * 9000);
+            currentStageIndex = 0;
+            startTime = Date.now();
+            startClientMode();
+        }
+
+        // ADMIN MONITOR
+        function startAdminMode() {
+            setScreen('screen-admin');
+            setInterval(renderAdminTable, 1000);
+        }
+
+        function renderAdminTable() {
+            const list = document.getElementById('admin-list');
+            const data = JSON.parse(localStorage.getItem('ai_admin_sync') || '{}');
+            list.innerHTML = '';
+
+            Object.keys(data).forEach(id => {
+                const dev = data[id];
+                const elapsedMin = Math.floor((Date.now() - dev.time) / 60000);
+                const elapsedSec = Math.floor(((Date.now() - dev.time) % 60000) / 1000);
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="color: var(--main-cyan); font-weight: bold;">${id}</td>
+                    <td><span class="badge">${dev.status}</span></td>
+                    <td>${elapsedMin}分 ${elapsedSec}秒</td>
+                `;
+                list.appendChild(tr);
+            });
+        }
+    </script>
 </body>
 </html>
