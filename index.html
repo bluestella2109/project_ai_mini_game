@@ -29,18 +29,28 @@
         <!-- 画面コンテンツエリア -->
         <div class="content">
 
-            <!-- タイトル & アカウント設定画面 -->
+            <!-- タイトル & 持ち主入力画面 -->
             <div id="screen-start" class="screen active">
                 <h1 class="glitch-text" data-text="PROJECT AI">PROJECT AI</h1>
                 <p>防壁システムにアクセスし、セキュリティロックを解除せよ</p>
                 
                 <div class="login-box">
-                    <label for="account-name-input">ACCOUNT / TABLET ID</label>
-                    <input type="text" id="account-name-input" placeholder="例: OPERATOR-01" maxlength="15">
+                    <label for="account-name-input">iPadの持ち主を入力してください</label>
+                    <input type="text" id="account-name-input" placeholder="例: 山田 太郎" maxlength="15">
                 </div>
 
-                <div class="btn-start" onclick="startGame()">
+                <div class="btn-start" onclick="goToModeSelection()">
                     START
+                </div>
+            </div>
+
+            <!-- モード選択画面（ゲーム or 管理者） -->
+            <div id="screen-mode-select" class="screen">
+                <h2>SELECT MODE</h2>
+                <p>アクセスモードを選択してください</p>
+                <div style="display: flex; gap: 20px;">
+                    <button class="btn btn-accent" onclick="startGame()">ENTER MISSION</button>
+                    <button class="btn" onclick="openAdminFromStart()">ADMIN MONITOR</button>
                 </div>
             </div>
 
@@ -51,10 +61,10 @@
                 <div id="reboot-grid" class="reboot-grid"></div>
             </div>
 
-            <!-- STAGE 2: 反射測定 -->
+            <!-- STAGE 2: 反射測定 / DON'T TOUCH -->
             <div id="stage-2" class="screen">
                 <h2>STAGE 2: REFLEX TEST</h2>
-                <p>「PUSH!」が表示された瞬間に画面をタップせよ</p>
+                <p id="stage2-instruction">「PUSH!」が表示された瞬間に画面をタップせよ</p>
                 <div id="reflex-box" onclick="handleReflexClick()">WAIT...</div>
                 <div id="reflex-time-display"></div>
             </div>
@@ -69,15 +79,17 @@
             <!-- STAGE 4: 周波数チューニング -->
             <div id="stage-4" class="screen">
                 <h2>STAGE 4: FREQUENCY TUNE</h2>
-                <p>目標周波数に数値を合致させよ</p>
+                <p>目標周波数(300~1000)に数値を合致させよ</p>
                 <div class="tune-container">
-                    <div class="tune-target">TARGET: <span id="tune-target-val">00</span></div>
+                    <div class="tune-target">TARGET: <span id="tune-target-val">300</span></div>
                     <div id="tune-current-val" class="tune-current">0</div>
                     <div>
+                        <button class="btn" onclick="adjustFrequency(-100)">-100</button>
                         <button class="btn" onclick="adjustFrequency(-10)">-10</button>
                         <button class="btn" onclick="adjustFrequency(-1)">-1</button>
                         <button class="btn" onclick="adjustFrequency(1)">+1</button>
                         <button class="btn" onclick="adjustFrequency(10)">+10</button>
+                        <button class="btn" onclick="adjustFrequency(100)">+100</button>
                     </div>
                     <button class="btn btn-accent" style="margin-top: 20px;" onclick="submitFrequency()">ENTER</button>
                 </div>
@@ -92,7 +104,7 @@
                 </div>
             </div>
 
-            <!-- リザルト画面 -->
+            <!-- リザルト画面 (管理者画面ボタン削除済み) -->
             <div id="screen-result" class="screen">
                 <h2>EXECUTION RESULT</h2>
                 <p>正解数: <span id="correct-count" class="accent-text">0</span> / 12</p>
@@ -104,7 +116,6 @@
                     </div>
                 </div>
                 <button class="btn btn-accent" onclick="startGame()">RETRY</button>
-                <button class="btn" onclick="showAdminScreen()">ADMIN MONITOR</button>
             </div>
 
             <!-- 管理者モニター画面 -->
