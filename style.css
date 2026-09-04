@@ -247,6 +247,7 @@ input[type="text"]:focus {
     align-items: center;
     box-shadow: var(--glow-red);
     animation: startPulse 1.5s infinite alternate;
+    cursor: pointer;
 }
 
 @keyframes startPulse {
@@ -336,7 +337,7 @@ input[type="text"]:focus {
     box-shadow: var(--glow-blue);
 }
 
-/* GAME 4: FREQUENCY TUNE */
+/* GAME 4 */
 .tune-container {
     background: rgba(0, 0, 0, 0.8);
     border: 1px solid var(--accent-blue);
@@ -365,7 +366,7 @@ input[type="text"]:focus {
     text-shadow: var(--glow-blue);
 }
 
-/* GAME 5: PATH FINDER */
+/* GAME 5 */
 .path-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
