@@ -3,17 +3,16 @@
 // ==========================================
 let currentStage = 0;
 let correctStageCount = 0;
-let timerInterval = null;
 let stageStartTime = 0;
 
-// 背景アニメーション用
+// 背景パーティクル
 const canvas = document.getElementById('matrix-bg');
 const ctx = canvas.getContext('2d');
 let particles = [];
 const particleCount = 40;
 
 // ==========================================
-// 初期化＆背景パーティクル（赤系統一）
+// 背景パーティクル（赤系統一）
 // ==========================================
 function initCanvas() {
     canvas.width = window.innerWidth;
@@ -26,7 +25,7 @@ function initCanvas() {
             vx: (Math.random() - 0.5) * 1.5,
             vy: (Math.random() - 0.5) * 1.5,
             radius: Math.random() * 2 + 1,
-            color: Math.random() > 0.4 ? '#ff1133' : '#ff5566' // 赤・朱系のみ
+            color: Math.random() > 0.4 ? '#ff1133' : '#ff5566'
         });
     }
 }
@@ -56,7 +55,7 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 // ==========================================
-// 画面切り替え制御
+// 画面切り替え & 全画面フィードバック表示
 // ==========================================
 function showScreen(screenId) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -64,7 +63,23 @@ function showScreen(screenId) {
     if (target) target.classList.add('active');
 }
 
-// ゲーム開始
+function showFeedback(isSuccess, detailText, callback) {
+    const overlay = document.getElementById('feedback-overlay');
+    const textElem = document.getElementById('feedback-text');
+    const subElem = document.getElementById('feedback-sub');
+
+    overlay.className = 'feedback-overlay ' + (isSuccess ? 'success' : 'failed');
+    textElem.innerText = isSuccess ? '成功' : '失敗';
+    subElem.innerText = detailText || (isSuccess ? 'STAGE CLEAR' : 'STAGE FAILED');
+
+    overlay.style.display = 'flex';
+
+    setTimeout(() => {
+        overlay.style.display = 'none';
+        if (callback) callback();
+    }, 1200);
+}
+
 function startGame() {
     currentStage = 1;
     correctStageCount = 0;
@@ -100,9 +115,9 @@ function initCurrentStage() {
 }
 
 // ==========================================
-// STAGE 1: 再起動ノード連打
+// STAGE 1: 再起動ノード
 // ==========================================
-let rebootTargetCount = 5;
+let rebootTargetCount = 3;
 let rebootCurrentCount = 0;
 
 function initStage1() {
@@ -135,23 +150,27 @@ function handleRebootClick(btn) {
         
         if (rebootCurrentCount >= rebootTargetCount) {
             correctStageCount++;
-            nextStage();
+            showFeedback(true, "CLEAR", () => nextStage());
         } else {
             highlightRandomNode();
         }
+    } else {
+        showFeedback(false, "ERROR", () => nextStage());
     }
 }
 
 // ==========================================
-// STAGE 2: 反射測定
+// STAGE 2: 反射測定（タイム秒数表示）
 // ==========================================
 let reflexTimeout = null;
 let reflexReady = false;
 
 function initStage2() {
     const box = document.getElementById('reflex-box');
+    const timeDisplay = document.getElementById('reflex-time-display');
     box.innerText = 'WAIT...';
     box.classList.remove('active-push');
+    timeDisplay.innerText = '';
     reflexReady = false;
     
     const randomDelay = Math.random() * 2000 + 1500;
@@ -165,17 +184,26 @@ function initStage2() {
 
 function handleReflexClick() {
     const box = document.getElementById('reflex-box');
+    const timeDisplay = document.getElementById('reflex-time-display');
+
     if (reflexReady) {
-        const reactionTime = Date.now() - stageStartTime;
-        if (reactionTime < 600) {
-            correctStageCount++;
-        }
+        const reactionTimeMs = Date.now() - stageStartTime;
+        const reactionTimeSec = (reactionTimeMs / 1000).toFixed(3);
+        
+        timeDisplay.innerText = `反応時間: ${reactionTimeSec} 秒`;
         clearTimeout(reflexTimeout);
-        nextStage();
+
+        const isSuccess = reactionTimeMs < 600;
+        if (isSuccess) correctStageCount++;
+
+        setTimeout(() => {
+            showFeedback(isSuccess, `${reactionTimeSec} 秒`, () => nextStage());
+        }, 500);
+
     } else {
-        box.innerText = 'TOO FAST!';
+        box.innerText = 'フライング！';
         clearTimeout(reflexTimeout);
-        setTimeout(initStage2, 1000);
+        showFeedback(false, "早すぎます！", () => nextStage());
     }
 }
 
@@ -199,13 +227,11 @@ function initStage3() {
         grid.appendChild(tile);
     }
     
-    // 3つのランダム位置を生成
     while (memorySequence.length < 3) {
         const idx = Math.floor(Math.random() * 16);
         if (!memorySequence.includes(idx)) memorySequence.push(idx);
     }
     
-    // パターンを一瞬点灯
     setTimeout(() => {
         const tiles = document.querySelectorAll('.memory-tile');
         memorySequence.forEach(idx => tiles[idx].classList.add('lit'));
@@ -223,9 +249,9 @@ function handleMemoryClick(idx) {
     userSequence.push(idx);
     
     if (userSequence.length === memorySequence.length) {
-        const isCorrect = memorySequence.every((val, i) => userSequence.includes(val));
+        const isCorrect = memorySequence.every((val) => userSequence.includes(val));
         if (isCorrect) correctStageCount++;
-        setTimeout(nextStage, 300);
+        showFeedback(isCorrect, "", () => nextStage());
     }
 }
 
@@ -250,10 +276,9 @@ function adjustFrequency(amount) {
 }
 
 function submitFrequency() {
-    if (Math.abs(currentFreq - targetFreq) <= 3) {
-        correctStageCount++;
-    }
-    nextStage();
+    const isSuccess = Math.abs(currentFreq - targetFreq) <= 3;
+    if (isSuccess) correctStageCount++;
+    showFeedback(isSuccess, `誤差: ${Math.abs(currentFreq - targetFreq)}`, () => nextStage());
 }
 
 // ==========================================
@@ -279,10 +304,9 @@ function resetPathInput() {
 }
 
 function submitPath() {
-    if (currentPathInput.length === 3) {
-        correctStageCount++; // 簡易解答判定
-        nextStage();
-    }
+    const isSuccess = (currentPathInput === "→↓→" || currentPathInput.length === 3);
+    if (isSuccess) correctStageCount++;
+    showFeedback(isSuccess, "", () => nextStage());
 }
 
 // ==========================================
@@ -316,16 +340,54 @@ function showFinalResult() {
     else if (percent >= 60) rank = 'RANK B';
 
     document.getElementById('score-rank').innerText = rank;
+}
 
-    // 「教室でAIを討伐せよ」のミッション表示を生成・更新
-    let missionElem = document.getElementById('mission-instruction');
-    if (!missionElem) {
-        missionElem = document.createElement('div');
-        missionElem.id = 'mission-instruction';
-        missionElem.className = 'mission-instruction';
-        const scoreBox = document.querySelector('.result-score-box');
-        if (scoreBox) scoreBox.appendChild(missionElem);
-    }
-    
-    missionElem.innerText = '【FINAL MISSION】教室へ向かい、暴走AIを討伐せよ！';
+// ==========================================
+// 管理者モニタ画面（画像レイアウト再現）
+// ==========================================
+function showAdminScreen() {
+    showScreen('screen-admin');
+    const container = document.getElementById('screen-admin');
+
+    const nodes = [
+        { name: "NODE 1 [ALPHA]", status: "ONLINE", title: "使用中 (IN USE)", state: "STAGE 3 実行中", diff: "NORMAL", timer: "01:24" },
+        { name: "NODE 2 [BETA]", status: "OFFLINE", title: "空室 (EMPTY)", state: "待機中 (IDLE)", diff: "--", timer: "--" },
+        { name: "NODE 3 [CORE]", status: "OFFLINE", title: "空室 (EMPTY)", state: "待機中 (IDLE)", diff: "--", timer: "--" }
+    ];
+
+    let html = `
+        <div class="admin-container">
+            <div class="admin-header">
+                <div class="admin-title">全AI防壁 自律稼働状況モニタ</div>
+                <button class="btn btn-accent" style="padding: 6px 12px; font-size: 0.9rem;" onclick="startGame()">画面へ戻る</button>
+            </div>
+            <div class="admin-grid">
+    `;
+
+    nodes.forEach(node => {
+        const isOnline = node.status === 'ONLINE';
+        html += `
+            <div class="node-card">
+                <div class="node-header">
+                    <span class="node-name">${node.name}</span>
+                    <span class="node-status-badge ${isOnline ? 'online' : 'offline'}">● ${node.status}</span>
+                </div>
+                <div class="node-main-status">${node.title}</div>
+                <div class="node-sub-status">${node.state}</div>
+                <div class="node-meta-grid">
+                    <div>
+                        <div class="node-meta-item">難易度</div>
+                        <div class="node-meta-value">${node.diff}</div>
+                    </div>
+                    <div>
+                        <div class="node-meta-item">タイマー</div>
+                        <div class="node-meta-value">${node.timer}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    html += `</div></div>`;
+    container.innerHTML = html;
 }
