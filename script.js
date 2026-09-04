@@ -1,17 +1,34 @@
 // ==========================================
+// 1. FIREBASE 初期設定
+// ※ ご自身の Firebase コンソールの設定値に置き換えてください
+// ==========================================
+const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+};
+
+// Firebaseの初期化
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const DEVICES_COLLECTION = "project_ai_devices";
+
+// ==========================================
 // グローバル変数・状態管理
 // ==========================================
 let totalQuestions = 12;
 let currentQuestionIndex = 0;
 let correctStageCount = 0;
 
-// 端末／持ち主識別用ID
+// 端末識別用ID
 let deviceId = "DEV-" + Math.floor(Math.random() * 8999 + 1000);
 let currentOwnerName = "未設定";
 let gameStartTime = null;
 let timerInterval = null;
 let elapsedTimeSec = 0;
-let heartbeatInterval = null;
 
 // 背景パーティクル
 const canvas = document.getElementById('matrix-bg');
@@ -21,6 +38,48 @@ const particleCount = 40;
 
 // ステージ進行順序 (各3回ずつ＝計12問)
 const stageOrder = [1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4];
+
+// 管理者画面のリアルタイム受信用リスト
+let realTimeDevicesStore = {};
+let unsubscribeAdminListener = null;
+
+// ==========================================
+// FIREBASE 通信処理 (Firestore)
+// ==========================================
+
+// 各iPad（子機）の現在の進捗をFirestoreへ保存/更新
+function sendDeviceStateToFirebase() {
+    const currentStageNumber = currentQuestionIndex < totalQuestions ? stageOrder[currentQuestionIndex] : "COMPLETE";
+    const statusText = currentQuestionIndex < totalQuestions ? `STAGE ${currentQuestionIndex + 1} / ${totalQuestions} (Stage ${currentStageNumber})` : "全ミッション完了";
+
+    const payload = {
+        deviceId: deviceId,
+        ownerName: currentOwnerName,
+        statusText: statusText,
+        elapsedTimeSec: elapsedTimeSec,
+        lastActive: firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    // ドキュメントIDを deviceId に固定してアップサート
+    db.collection(DEVICES_COLLECTION).doc(deviceId).set(payload, { merge: true })
+        .catch(err => console.error("Firebase update error:", err));
+}
+
+// 管理者（親機）用：Firestoreの全端末データをリアルタイム購読
+function setupAdminFirebaseListener() {
+    if (unsubscribeAdminListener) unsubscribeAdminListener();
+
+    unsubscribeAdminListener = db.collection(DEVICES_COLLECTION)
+        .onSnapshot((snapshot) => {
+            realTimeDevicesStore = {};
+            snapshot.forEach((doc) => {
+                realTimeDevicesStore[doc.id] = doc.data();
+            });
+            renderAdminContent();
+        }, (error) => {
+            console.error("Firebase listen error:", error);
+        });
+}
 
 // ==========================================
 // 背景パーティクル
@@ -63,11 +122,10 @@ window.addEventListener('resize', initCanvas);
 window.addEventListener('DOMContentLoaded', () => {
     initCanvas();
     drawParticles();
-    startHeartbeat();
 });
 
 // ==========================================
-// 画面切り替え & 全画面フィードバック (0.3秒待機+フェードイン)
+// 画面切り替え & 全画面フィードバック
 // ==========================================
 function showScreen(screenId) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -107,6 +165,7 @@ function goToModeSelection() {
 }
 
 function openAdminFromStart() {
+    setupAdminFirebaseListener();
     showAdminScreen();
 }
 
@@ -117,9 +176,11 @@ function startGame() {
 
     if (timerInterval) clearInterval(timerInterval);
     gameStartTime = Date.now();
+    
+    // 1秒ごとおよび状態更新ごとにFirebaseへ同期
     timerInterval = setInterval(() => {
         elapsedTimeSec = Math.floor((Date.now() - gameStartTime) / 1000);
-        updateDeviceState();
+        sendDeviceStateToFirebase();
     }, 1000);
 
     updateStageCounter();
@@ -133,6 +194,8 @@ function updateStageCounter() {
 
 function nextQuestion() {
     currentQuestionIndex++;
+    sendDeviceStateToFirebase();
+
     if (currentQuestionIndex >= totalQuestions) {
         clearInterval(timerInterval);
         startLoadingToResult();
@@ -186,7 +249,6 @@ function initStage1() {
         grid.appendChild(btn);
     }
 
-    // 5ステップの順番を作成
     while (stage1Sequence.length < 5) {
         const randomIndex = Math.floor(Math.random() * 4);
         stage1Sequence.push(randomIndex);
@@ -258,7 +320,6 @@ function initStage2() {
     timeDisplay.innerText = '';
     reflexReady = false;
 
-    // 3回に1回（＝2問目）は Don't touch
     isDontTouchRound = (currentQuestionIndex % 3 === 1);
 
     if (isDontTouchRound) {
@@ -276,7 +337,6 @@ function initStage2() {
             box.innerText = "DON'T TOUCH!";
             box.classList.add('active-dont-touch');
 
-            // 1.5秒間押さずに耐えたら成功
             dontTouchSuccessTimeout = setTimeout(() => {
                 if (reflexReady) {
                     reflexReady = false;
@@ -298,19 +358,17 @@ function handleReflexClick() {
 
     if (reflexReady) {
         if (isDontTouchRound) {
-            // Don't touch の時に触ってしまった場合 ➔ 失敗
             clearTimeout(dontTouchSuccessTimeout);
             reflexReady = false;
             showFeedback(false, "TOUCHED ERROR!", () => nextQuestion());
         } else {
-            // PUSH の時 ➔ 反射測定（1.0秒以内に緩和）
             const reactionTimeMs = Date.now() - reflexStartTime;
             const reactionTimeSec = (reactionTimeMs / 1000).toFixed(3);
             
             timeDisplay.innerText = `反応時間: ${reactionTimeSec} 秒`;
             clearTimeout(reflexTimeout);
 
-            const isSuccess = reactionTimeMs <= 1000; // 1.0秒以内に変更
+            const isSuccess = reactionTimeMs <= 1000;
             if (isSuccess) correctStageCount++;
 
             setTimeout(() => {
@@ -318,7 +376,6 @@ function handleReflexClick() {
             }, 500);
         }
     } else {
-        // お手つき
         box.innerText = 'フライング！';
         clearTimeout(reflexTimeout);
         if (dontTouchSuccessTimeout) clearTimeout(dontTouchSuccessTimeout);
@@ -346,8 +403,7 @@ function initStage3() {
         grid.appendChild(tile);
     }
 
-    // 3個〜7個のランダム枚数
-    const targetCount = Math.floor(Math.random() * 5) + 3; // 3 ~ 7
+    const targetCount = Math.floor(Math.random() * 5) + 3;
 
     while (memorySequence.length < targetCount) {
         const idx = Math.floor(Math.random() * 16);
@@ -378,13 +434,12 @@ function handleMemoryClick(idx) {
 }
 
 // ==========================================
-// STAGE 4: 周波数チューニング（300〜1000、-100/+100追加）
+// STAGE 4: 周波数チューニング
 // ==========================================
 let targetFreq = 0;
 let currentFreq = 0;
 
 function initStage4() {
-    // 300 ~ 1000
     targetFreq = Math.floor(Math.random() * 701) + 300;
     currentFreq = 300;
     document.getElementById('tune-target-val').innerText = targetFreq;
@@ -438,70 +493,30 @@ function showFinalResult() {
 }
 
 // ==========================================
-// マルチデバイス共有ステート & 管理者画面
+// 管理者画面 描画
 // ==========================================
-function updateDeviceState() {
-    const currentStageNumber = currentQuestionIndex < totalQuestions ? stageOrder[currentQuestionIndex] : "COMPLETE";
-    const statusText = currentQuestionIndex < totalQuestions ? `STAGE ${currentQuestionIndex + 1} / ${totalQuestions} (Stage ${currentStageNumber})` : "全ミッション完了";
-
-    const state = {
-        deviceId: deviceId,
-        ownerName: currentOwnerName,
-        statusText: statusText,
-        elapsedTimeSec: elapsedTimeSec,
-        lastActive: Date.now()
-    };
-
-    let allDevices = {};
-    try {
-        allDevices = JSON.parse(localStorage.getItem('project_ai_devices') || '{}');
-    } catch(e) { allDevices = {}; }
-
-    allDevices[deviceId] = state;
-    localStorage.setItem('project_ai_devices', JSON.stringify(allDevices));
-}
-
-function startHeartbeat() {
-    if (heartbeatInterval) clearInterval(heartbeatInterval);
-    updateDeviceState();
-    heartbeatInterval = setInterval(updateDeviceState, 2000);
-}
-
 function showAdminScreen() {
     showScreen('screen-admin');
     renderAdminContent();
-
-    if (adminTimerInterval) clearInterval(adminTimerInterval);
-    adminTimerInterval = setInterval(renderAdminContent, 1000);
 }
-
-let adminTimerInterval = null;
 
 function renderAdminContent() {
     const container = document.getElementById('screen-admin');
-
-    let allDevices = {};
-    try {
-        allDevices = JSON.parse(localStorage.getItem('project_ai_devices') || '{}');
-    } catch(e) { allDevices = {}; }
-
-    const now = Date.now();
-    // 6秒以内に通信があったものをアクティブと判定
-    const activeDevices = Object.values(allDevices).filter(dev => (now - dev.lastActive) < 6000);
+    const activeDevices = Object.values(realTimeDevicesStore);
 
     let cardsHtml = '';
     if (activeDevices.length === 0) {
-        cardsHtml = `<div style="color: #8a9bbd; grid-column: 1 / -1; text-align: center; padding: 40px;">現在アクセス中の端末はありません</div>`;
+        cardsHtml = `<div style="color: #8a9bbd; grid-column: 1 / -1; text-align: center; padding: 40px;">現在アクセス中の端末はありません (待機中...)</div>`;
     } else {
         activeDevices.forEach(dev => {
             cardsHtml += `
                 <div class="node-card">
                     <div class="node-header">
-                        <span class="node-name">持ち主: ${dev.ownerName}</span>
-                        <span class="node-status-badge online">● ONLINE</span>
+                        <span class="node-name">持ち主: ${dev.ownerName || '未設定'}</span>
+                        <span class="node-status-badge online">● LIVE</span>
                     </div>
                     <div class="node-main-status">使用中 (IN USE)</div>
-                    <div class="node-sub-status">${dev.statusText}</div>
+                    <div class="node-sub-status">${dev.statusText || '-'}</div>
                     <div class="node-meta-grid">
                         <div>
                             <div class="node-meta-item">端末ID</div>
@@ -509,7 +524,7 @@ function renderAdminContent() {
                         </div>
                         <div>
                             <div class="node-meta-item">経過時間</div>
-                            <div class="node-meta-value">${formatTimer(dev.elapsedTimeSec)}</div>
+                            <div class="node-meta-value">${formatTimer(dev.elapsedTimeSec || 0)}</div>
                         </div>
                     </div>
                 </div>
@@ -521,7 +536,7 @@ function renderAdminContent() {
         <div class="admin-container">
             <div class="admin-header">
                 <div class="admin-title">全AI防壁 リアルタイム接続モニタ (${activeDevices.length}台接続中)</div>
-                <button class="btn btn-accent" style="padding: 6px 12px; font-size: 0.9rem;" onclick="showScreen('screen-start')">トップへ戻る</button>
+                <button class="btn btn-accent" style="padding: 6px 12px; font-size: 0.9rem;" onclick="location.reload()">トップへ戻る</button>
             </div>
             <div class="admin-grid">
                 ${cardsHtml}
