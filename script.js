@@ -1,197 +1,221 @@
-// --- Firebase 設定 ---
+// --- Firebase Config (コピペしてください) ---
 const firebaseConfig = {
     apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT.firebaseapp.com",
     databaseURL: "https://YOUR_PROJECT.firebaseio.com",
     projectId: "YOUR_PROJECT",
-    storageBucket: "YOUR_PROJECT.appspot.com",
-    messagingSenderId: "YOUR_ID",
-    appId: "YOUR_APP_ID"
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 const app = {
-    deviceId: 'ID-' + Math.random().toString(36).substr(2, 4).toUpperCase(),
-    startTime: null,
-    currentMission: 0,
+    uid: 'NODE-' + Math.floor(1000 + Math.random() * 9000),
+    startTime: 0,
+    timerInterval: null,
 
     init() {
-        this.drawBackground();
-        window.addEventListener('resize', () => this.drawBackground());
+        document.getElementById('user-id-disp').innerText = this.uid;
+        this.createMatrixBg();
     },
 
-    // 背景描画（デジタルレイン＋グリッド）
-    drawBackground() {
-        const canvas = document.getElementById('bg-canvas');
+    createMatrixBg() {
+        const canvas = document.getElementById('matrix-canvas');
         const ctx = canvas.getContext('2d');
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        const chars = "0123456789ABCDEF";
+        const fontSize = 14;
+        const columns = canvas.width / fontSize;
+        const drops = Array(Math.floor(columns)).fill(1);
 
         function draw() {
-            ctx.fillStyle = 'rgba(0, 8, 20, 0.1)';
+            ctx.fillStyle = "rgba(0, 5, 10, 0.05)";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // グリッド線
-            ctx.strokeStyle = 'rgba(0, 242, 255, 0.05)';
-            for(let x=0; x<canvas.width; x+=40) {
-                ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke();
-            }
-            for(let y=0; y<canvas.height; y+=40) {
-                ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke();
+            ctx.fillStyle = "#00f2ff";
+            ctx.font = fontSize + "px monospace";
+            for (let i = 0; i < drops.length; i++) {
+                const text = chars.charAt(Math.floor(Math.random() * chars.length));
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+                drops[i]++;
             }
         }
         setInterval(draw, 50);
+    }
+};
+
+const game = {
+    step: 1,
+    
+    start() {
+        app.startTime = Date.now();
+        ui.transition('screen-game');
+        this.updateStatus("INITIALIZING...");
+        this.loadMission(1);
+        this.startTimer();
     },
 
-    // プレイヤー開始
-    initPlayer() {
-        this.startTime = Date.now();
-        document.getElementById('display-id').innerText = this.deviceId;
-        this.showScreen('screen-game');
-        this.nextMission();
+    startTimer() {
+        const timerDisp = document.getElementById('live-timer');
+        app.timerInterval = setInterval(() => {
+            const sec = Math.floor((Date.now() - app.startTime) / 1000);
+            const m = String(Math.floor(sec / 60)).padStart(2, '0');
+            const s = String(sec % 60).padStart(2, '0');
+            timerDisp.innerText = `${m}:${s}`;
+            // Firebase送信
+            db.ref('sessions/' + app.uid).update({
+                wait_sec: sec,
+                last_seen: Date.now()
+            });
+        }, 1000);
     },
 
-    showScreen(id) {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
+    updateStatus(msg) {
+        db.ref('sessions/' + app.uid).update({ status: msg });
     },
 
-    updateFirebase(status) {
-        db.ref('devices/' + this.deviceId).set({
-            status: status,
-            startTime: this.startTime,
-            lastSeen: Date.now()
-        });
-    },
+    loadMission(num) {
+        this.step = num;
+        document.getElementById('m-num').innerText = "0" + num;
+        const container = document.getElementById('game-container');
+        container.innerHTML = "";
 
-    // --- ミッション管理 ---
-    nextMission() {
-        this.currentMission++;
-        if (this.currentMission > 4) {
-            this.triggerFinalAlert();
-            return;
+        switch(num) {
+            case 1: this.missionReboot(container); break;
+            case 2: this.missionReflex(container); break;
+            case 3: this.missionMemory(container); break;
+            case 4: this.missionDrone(container); break;
+            default: this.finish();
         }
-        
-        const area = document.getElementById('game-canvas-area');
-        document.getElementById('mission-num').innerText = "0" + this.currentMission;
-        
-        if (this.currentMission === 1) this.gameReboot(area);
-        if (this.currentMission === 2) this.gameReflex(area);
-        if (this.currentMission === 3) this.gameMemory(area);
-        if (this.currentMission === 4) this.gameDrone(area);
     },
 
     // 1. SYSTEM REBOOT
-    gameReboot(area) {
-        this.updateFirebase("M1: REBOOTING");
-        document.getElementById('mission-title').innerText = "SYSTEM REBOOT";
-        area.innerHTML = `<div class="node-grid">
-            <div class="node-btn" id="nb-POWER">POWER</div>
-            <div class="node-btn" id="nb-NETWORK">NETWORK</div>
-            <div class="node-btn" id="nb-CORE">CORE</div>
-            <div class="node-btn" id="nb-MEMORY">MEMORY</div>
-        </div><p id="hint">ORDER: POWER > NETWORK > CORE > MEMORY</p>`;
-        
+    missionReboot(el) {
+        document.getElementById('m-name').innerText = "SYSTEM REBOOT";
+        this.updateStatus("M1: ノード復旧中");
+        el.innerHTML = `<p class="hint">以下の順序でタップせよ: <br>POWER → NETWORK → CORE → MEMORY</p>
+                        <div class="node-container" id="nodes"></div>`;
         const order = ["POWER", "NETWORK", "CORE", "MEMORY"];
-        let step = 0;
-        order.forEach(id => {
-            document.getElementById('nb-'+id).onclick = (e) => {
-                if(id === order[step]) {
-                    e.target.classList.add('active');
-                    step++;
-                    if(step === 4) setTimeout(() => this.nextMission(), 500);
+        let idx = 0;
+        order.sort(() => Math.random() - 0.5).forEach(id => {
+            const div = document.createElement('div');
+            div.className = 'node-item';
+            div.innerText = id;
+            div.onclick = () => {
+                if(id === ["POWER", "NETWORK", "CORE", "MEMORY"][idx]) {
+                    div.classList.add('correct');
+                    idx++;
+                    if(idx === 4) setTimeout(() => this.loadMission(2), 600);
                 } else {
-                    alert("SEQUENCE ERROR");
-                    location.reload();
+                    div.classList.add('wrong');
+                    setTimeout(() => this.loadMission(1), 500);
                 }
             };
+            document.getElementById('nodes').appendChild(div);
         });
     },
 
     // 2. NEURAL REFLEX
-    gameReflex(area) {
-        this.updateFirebase("M2: REFLEX");
-        document.getElementById('mission-title').innerText = "NEURAL REFLEX";
-        area.innerHTML = `<div id="reflex-target" class="start-circle-outer" style="width:200px;height:200px">WAIT</div>`;
-        const target = document.getElementById('reflex-target');
+    missionReflex(el) {
+        document.getElementById('m-name').innerText = "NEURAL REFLEX";
+        this.updateStatus("M2: 反応速度測定");
+        el.innerHTML = `<div id="reflex-btn" class="reflex-trigger">WAIT...</div>`;
+        const btn = document.getElementById('reflex-btn');
+        const delay = 2000 + Math.random() * 3000;
         
-        setTimeout(() => {
-            target.innerHTML = "PUSH!!";
-            target.style.borderColor = "#ff0055";
-            const start = Date.now();
-            target.onclick = () => {
-                const diff = (Date.now() - start) / 1000;
-                target.innerHTML = diff + "s";
-                setTimeout(() => this.nextMission(), 1000);
+        const timeout = setTimeout(() => {
+            btn.innerText = "PUSH!!";
+            btn.style.background = "var(--cyan)";
+            btn.style.color = "var(--bg)";
+            const start = performance.now();
+            btn.onclick = () => {
+                const diff = (performance.now() - start) / 1000;
+                let rank = diff < 0.25 ? "S" : diff < 0.35 ? "A" : "B";
+                btn.innerHTML = `TIME: ${diff.toFixed(3)}s<br>RANK: ${rank}`;
+                setTimeout(() => this.loadMission(3), 1500);
             };
-        }, 2000 + Math.random() * 2000);
+        }, delay);
     },
 
     // 3. MEMORY CORE
-    gameMemory(area) {
-        this.updateFirebase("M3: MEMORY");
-        document.getElementById('mission-title').innerText = "MEMORY CORE";
-        area.innerHTML = `<div class="node-grid" id="mem-grid"></div>`;
+    missionMemory(el) {
+        document.getElementById('m-name').innerText = "MEMORY CORE";
+        this.updateStatus("M3: 記憶領域テスト");
+        el.innerHTML = `<div class="node-container" id="mem-grid" style="grid-template-columns:repeat(3,1fr)"></div>`;
         const grid = document.getElementById('mem-grid');
-        for(let i=0; i<4; i++) grid.innerHTML += `<div class="node-btn" id="m-${i}">?</div>`;
+        for(let i=0; i<9; i++) grid.innerHTML += `<div class="node-item" id="m-${i}">□</div>`;
         
-        // 簡易ロジック: 2番目が光る
+        const targets = [1, 4, 6, 8].sort(() => Math.random() - 0.5);
+        targets.forEach(t => document.getElementById('m-'+t).classList.add('correct'));
+        
         setTimeout(() => {
-            document.getElementById('m-1').classList.add('active');
-            setTimeout(() => {
-                document.getElementById('m-1').classList.remove('active');
-                document.querySelectorAll('.node-btn').forEach((btn, idx) => {
-                    btn.onclick = () => { if(idx===1) this.nextMission(); };
-                });
-            }, 1000);
-        }, 500);
+            targets.forEach(t => document.getElementById('m-'+t).classList.remove('correct'));
+            let count = 0;
+            document.querySelectorAll('.node-item').forEach((item, i) => {
+                item.onclick = () => {
+                    if(targets.includes(i)) {
+                        item.classList.add('correct');
+                        count++;
+                        if(count === targets.length) setTimeout(() => this.loadMission(4), 1000);
+                    } else {
+                        this.loadMission(3);
+                    }
+                };
+            });
+        }, 1500);
     },
 
     // 4. DRONE CONTROL
-    gameDrone(area) {
-        this.updateFirebase("M4: DRONE");
-        document.getElementById('mission-title').innerText = "DRONE CONTROL";
-        area.innerHTML = `<div style="border:1px solid #00f2ff; width:300px; height:200px; position:relative;">
-            <div id="drone" style="position:absolute; left:10px; top:10px;">[D]</div>
-            <div style="position:absolute; right:10px; bottom:10px; color:#ff0055;">[GOAL]</div>
+    missionDrone(el) {
+        document.getElementById('m-name').innerText = "DRONE CONTROL";
+        this.updateStatus("M4: ドローン誘導");
+        el.innerHTML = `<div id="drone-stage" style="width:300px; height:200px; border:2px solid var(--cyan); position:relative; overflow:hidden;">
+            <div id="drone-unit" style="position:absolute; left:10px; top:10px; font-size:12px;">▲DRONE</div>
+            <div style="position:absolute; right:10px; bottom:10px; color:var(--red)">[GOAL]</div>
+            <div style="position:absolute; left:100px; top:50px; width:20px; height:100px; background:var(--cyan); opacity:0.5;"></div>
         </div>
-        <button class="node-btn" style="margin-top:20px" onclick="app.nextMission()">MANUAL OVERRIDE (GOAL)</button>`;
+        <div class="controls" style="margin-top:20px;">
+            <button class="cyber-btn" onclick="game.droneMove()">推進力注入 (OVERRIDE)</button>
+        </div>`;
+    },
+    
+    droneMove() {
+        this.updateStatus("シーケンス完了");
+        this.loadMission(5);
     },
 
-    triggerFinalAlert() {
-        this.updateFirebase("AI TAKEOVER");
-        this.showScreen('screen-alert');
-        document.body.classList.add('alert-screen-active');
-    },
+    finish() {
+        clearInterval(app.timerInterval);
+        ui.transition('screen-alert');
+        this.updateStatus("AI INVASION COMPLETED");
+    }
+};
 
-    // --- 管理者モード ---
-    showAdminLogin() {
-        const pass = prompt("ADMIN PASSWORD:");
-        if(pass === "1234") { // パスワードは任意
-            this.showScreen('screen-admin');
-            this.runAdminMonitor();
+const ui = {
+    transition(screenId) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(screenId).classList.add('active');
+    }
+};
+
+const admin = {
+    login() {
+        const p = prompt("ADMIN KEY:");
+        if(p === "admin") {
+            ui.transition('screen-admin');
+            this.startMonitor();
         }
     },
-
-    runAdminMonitor() {
-        db.ref('devices').on('value', (snapshot) => {
-            const data = snapshot.val();
-            const list = document.getElementById('admin-device-list');
+    startMonitor() {
+        db.ref('sessions').on('value', snap => {
+            const list = document.getElementById('admin-list');
             list.innerHTML = "";
+            const data = snap.val();
             for(let id in data) {
-                const device = data[id];
-                const waitSec = Math.floor((Date.now() - device.startTime) / 1000);
-                list.innerHTML += `
-                    <div class="device-card">
-                        <h3>${id}</h3>
-                        <p>STATUS: <span class="status-online">${device.status}</span></p>
-                        <p>WAIT TIME: ${waitSec}s</p>
-                        <div style="width:100%; height:5px; background:#111;">
-                            <div style="width:${(waitSec/300)*100}%; background:var(--primary); height:100%;"></div>
-                        </div>
-                    </div>
-                `;
+                const s = data[id];
+                list.innerHTML += `<div class="card">
+                    <strong>${id}</strong><br>
+                    状態: ${s.status}<br>
+                    待機時間: ${s.wait_sec}秒
+                </div>`;
             }
         });
     }
