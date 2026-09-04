@@ -1,8 +1,8 @@
 // --- Firebase Config (コピペしてください) ---
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    databaseURL: "https://YOUR_PROJECT.firebaseio.com",
-    projectId: "YOUR_PROJECT",
+    apiKey: "AIzaSyA5pNqWzop5a3LaY0Vge1fOqFQnYLd9L9k",
+    databaseURL: "https://sf-realtime-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "sf-realtime",
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
