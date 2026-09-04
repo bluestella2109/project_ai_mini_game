@@ -3,12 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PROJECT AI // SYSTEM TERMINAL</title>
+    <title>PROJECT AI // システムターミナル</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -20,9 +16,9 @@
     <div class="container" id="app-container">
         <!-- 上部ステータスバー -->
         <div class="top-bar">
-            <span class="badge" id="player-display">PLAYER // NOT_SET</span>
-            <span id="stage-counter">STAGE 0/12</span>
-            <span class="badge" id="status-badge">STATUS: IDLE</span>
+            <span class="badge" id="player-display">プレイヤー // 未設定</span>
+            <span id="stage-counter">ステージ 0/12</span>
+            <span class="badge badge-accent" id="status-badge">状態: 待機中</span>
         </div>
 
         <div class="content">
@@ -38,34 +34,34 @@
 
             <!-- プレイヤー登録画面 -->
             <div id="screen-name" class="screen">
-                <h2>PLAYER REGISTRATION</h2>
+                <h2>プレイヤー登録</h2>
                 <p>プレイヤー名（またはiPad番号）を入力してください</p>
-                <input type="text" id="player-name-input" placeholder="e.g. PLAYER-01" maxlength="15">
+                <input type="text" id="player-name-input" placeholder="例: プレイヤーA / iPad-01" maxlength="15">
                 <br>
-                <button class="btn" onclick="submitName()">ENTER SYSTEM</button>
+                <button class="btn btn-accent" onclick="submitName()">ゲームを開始する</button>
             </div>
 
             <!-- 1. ミッション開始ゲート -->
             <div id="screen-start" class="screen">
-                <p>SYSTEM READY // ACCESS POINT</p>
+                <p>システム準備完了 // アクセスポイント</p>
                 <h1 class="glitch-text" style="margin-bottom: 30px;">PROJECT AI</h1>
                 <button class="btn btn-start" onclick="nextStage()">
                     <span style="font-size: 1.8rem; display: block; margin-bottom: 5px;">⏻</span>
-                    <span>MISSION START</span>
+                    <span>ミッション開始</span>
                 </button>
             </div>
 
             <!-- 2. GAME 1: SYSTEM REBOOT -->
             <div id="screen-g1" class="screen">
-                <h2>MISSION 1: SYSTEM REBOOT</h2>
-                <p id="g1-status">MEMORIZE THE SEQUENCE</p>
+                <h2>ミッション 1: SYSTEM REBOOT</h2>
+                <p id="g1-status">位置と順番を覚えてください</p>
                 <div class="reboot-grid" id="g1-nodes"></div>
             </div>
 
             <!-- 3. GAME 2: NEURAL REFLEX -->
             <div id="screen-g2" class="screen">
-                <h2>MISSION 2: NEURAL REFLEX</h2>
-                <p id="g2-status">TAP IMMEDIATELY WHEN SIGNAL CHANGES TO "PUSH"</p>
+                <h2>ミッション 2: NEURAL REFLEX</h2>
+                <p id="g2-status">「PUSH」に変わった瞬間にタップしてください</p>
                 <div id="reflex-box" onclick="handleReflexTap()">
                     <span id="reflex-text">WAIT...</span>
                     <span id="reflex-subtext"></span>
@@ -74,17 +70,17 @@
 
             <!-- 4. GAME 3: MEMORY CORE -->
             <div id="screen-g3" class="screen">
-                <h2>MISSION 3: MEMORY CORE</h2>
-                <p id="g3-status">LOCATE THE HIGHLIGHTED NODES</p>
+                <h2>ミッション 3: MEMORY CORE</h2>
+                <p id="g3-status">光ったグリッドの配置を特定してください</p>
                 <div class="memory-grid" id="g3-grid"></div>
             </div>
 
             <!-- 5. GAME 4: FREQUENCY TUNE -->
             <div id="screen-g4" class="screen">
-                <h2>MISSION 4: FREQUENCY TUNE</h2>
-                <p id="g4-status">ALIGN VALUE TO TARGET FREQUENCY</p>
+                <h2>ミッション 4: FREQUENCY TUNE</h2>
+                <p id="g4-status">目標の周波数に数値を合わせてください</p>
                 <div class="tune-container">
-                    <div class="tune-target">TARGET: <span id="g4-target-val">0</span> Hz</div>
+                    <div class="tune-target">目標: <span id="g4-target-val">0</span> Hz</div>
                     <div class="tune-current" id="g4-current-val">0</div>
                     <div class="tune-controls">
                         <button class="btn" onclick="adjustTune(-10)">-10</button>
@@ -93,16 +89,16 @@
                         <button class="btn" onclick="adjustTune(10)">+10</button>
                     </div>
                     <br>
-                    <button class="btn" onclick="submitTune()">EXECUTE</button>
+                    <button class="btn btn-accent" onclick="submitTune()">確定</button>
                 </div>
             </div>
 
             <!-- 6. GAME 5: PATH FINDER -->
             <div id="screen-g5" class="screen">
-                <h2>MISSION 5: PATH FINDER</h2>
-                <p id="g5-status">INPUT NAVIGATION FROM 'S' TO 'G'</p>
+                <h2>ミッション 5: PATH FINDER</h2>
+                <p id="g5-status">SからGへの正しい移動手順（矢印）を入力してください</p>
                 <div class="path-grid" id="g5-grid"></div>
-                <div class="path-inputs" id="g5-user-path">PATH: -</div>
+                <div class="path-inputs" id="g5-user-path">入力: -</div>
                 <div class="path-controls">
                     <button class="btn" onclick="addPathInput('↑')">↑</button>
                     <div>
@@ -110,15 +106,15 @@
                         <button class="btn" onclick="addPathInput('↓')">↓</button>
                         <button class="btn" onclick="addPathInput('→')">→</button>
                     </div>
-                    <button class="btn" onclick="submitPath()">RUN</button>
-                    <button class="btn" onclick="clearPath()">CLEAR</button>
+                    <button class="btn btn-accent" onclick="submitPath()">実行</button>
+                    <button class="btn" onclick="clearPath()">クリア</button>
                 </div>
             </div>
 
             <!-- 7. 警告画面 -->
             <div id="screen-alert" class="screen">
                 <h1 class="glitch-text alert-title">CRITICAL ERROR</h1>
-                <h2 style="color: #fff; margin-bottom: 20px;">AI INVASION DETECTED</h2>
+                <h2 style="color: #fff; margin-bottom: 20px;">AIの侵略を検出</h2>
                 <div class="alert-box">
                     <span class="alert-text-bold">【警告】システム侵略完了</span><br>
                     端末側からの防衛プロトコルは完全に無効化されました。<br>
@@ -126,47 +122,47 @@
                     <strong>【緊急ミッション指令】</strong><br>
                     これより直接介入に移行する。直ちに教室内の【物理メインコア】へ向かい、AI暴走の強制停止コードを実行せよ！
                 </div>
-                <button class="btn btn-danger" style="margin-top: 25px;" onclick="startLoadingPhase()">AI分析結果を確認</button>
+                <button class="btn btn-accent" style="margin-top: 25px;" onclick="startLoadingPhase()">AI分析結果を確認</button>
             </div>
 
             <!-- 8. ローディング＆結果発表画面 -->
             <div id="screen-result" class="screen">
                 <div id="loading-box">
-                    <h2>ANALYZING ADAPTABILITY DATA...</h2>
-                    <p id="loading-status">AGGREGATING SYSTEM LOGS</p>
+                    <h2>AI適合度データ解析中...</h2>
+                    <p id="loading-status">システムログを集計しています</p>
                     <div class="progress-bar-container">
                         <div class="progress-bar" id="progress-bar"></div>
                     </div>
                 </div>
 
                 <div id="result-box" style="display: none;">
-                    <h2 style="font-size: 1.6rem; margin-bottom: 10px;">AI ADAPTABILITY ANALYSIS COMPLETE</h2>
-                    <p style="margin-bottom: 10px;">CLEARED: <span id="correct-count" style="color: var(--main-cyan); font-weight: bold;">0</span> / 12 STAGES</p>
+                    <h2 style="font-size: 1.6rem; margin-bottom: 10px;">AI討伐適合度 解析完了</h2>
+                    <p style="margin-bottom: 10px;">クリア数: <span id="correct-count" class="accent-text" style="font-weight: bold;">0</span> / 12 問</p>
                     <div class="result-score-box">
                         <div class="score-percent" id="score-percent">0%</div>
                         <div class="score-rank" id="score-rank">RANK -</div>
                     </div>
-                    <button class="btn" style="margin-top: 20px;" onclick="resetTerminal()">RETURN TO MAIN</button>
+                    <button class="btn btn-accent" style="margin-top: 20px;" onclick="resetTerminal()">最初の画面に戻る</button>
                 </div>
             </div>
 
             <!-- 9. 管理者画面 -->
             <div id="screen-admin" class="screen">
-                <h2>SYSTEM DASHBOARD</h2>
-                <p>REAL-TIME TERMINAL MONITORING</p>
+                <h2>システム管理ダッシュボード</h2>
+                <p>リアルタイム稼働端末モニタリング</p>
                 <table class="admin-table">
                     <thead>
                         <tr>
-                            <th>PLAYER</th>
-                            <th>MISSION</th>
-                            <th>STATUS</th>
-                            <th>TIME</th>
+                            <th>プレイヤー名</th>
+                            <th>現在のミッション</th>
+                            <th>進行状況</th>
+                            <th>経過時間</th>
                         </tr>
                     </thead>
                     <tbody id="admin-list"></tbody>
                 </table>
                 <br>
-                <button class="btn" onclick="exitAdmin()">BACK TO MENU</button>
+                <button class="btn" onclick="exitAdmin()">モード選択に戻る</button>
             </div>
         </div>
     </div>
