@@ -399,8 +399,29 @@ function submitTune() {
     }
 }
 
-// --- GAME 5: PATH FINDER ---
+// --- GAME 5: PATH FINDER (多パターン問題追加) ---
 let g5UserPath = [];
+let currentPathAnswer = '';
+
+// PATH FINDER 問題データベース（4パターン）
+const PATH_PROBLEMS = [
+    {
+        cells: ['S', '', '', '#', '#', '', '', '', 'G'],
+        answer: '→→↓↓'
+    },
+    {
+        cells: ['S', '#', '', '', '#', '', '', '', 'G'],
+        answer: '↓↓→→'
+    },
+    {
+        cells: ['S', '', '#', '', '', '#', '', '', 'G'],
+        answer: '→↓↓→'
+    },
+    {
+        cells: ['S', '', '', '', '#', '#', '', '', 'G'],
+        answer: '↓↓→→'
+    }
+];
 
 function runG5(level, problemName) {
     setScreen('screen-g5');
@@ -413,13 +434,11 @@ function runG5(level, problemName) {
     const grid = document.getElementById('g5-grid');
     grid.innerHTML = '';
 
-    const cells = [
-        'S', '', '',
-        '#', '#', '',
-        '', '', 'G'
-    ];
+    // ランダムに問題パターンを選択
+    const problem = PATH_PROBLEMS[Math.floor(Math.random() * PATH_PROBLEMS.length)];
+    currentPathAnswer = problem.answer;
 
-    cells.forEach(c => {
+    problem.cells.forEach(c => {
         const div = document.createElement('div');
         div.className = 'path-cell';
         if (c === 'S') div.classList.add('start');
@@ -431,7 +450,7 @@ function runG5(level, problemName) {
 }
 
 function addPathInput(dir) {
-    if (g5UserPath.length < 6) {
+    if (g5UserPath.length < 8) {
         g5UserPath.push(dir);
         document.getElementById('g5-user-path').innerText = '入力: ' + g5UserPath.join(' ');
     }
@@ -444,7 +463,7 @@ function clearPath() {
 
 function submitPath() {
     const inputStr = g5UserPath.join('');
-    if (inputStr === '→→↓↓') {
+    if (inputStr === currentPathAnswer) {
         if (stageFirstTry) correctStageCount++;
         setTimeout(nextStage, 400);
     } else {
@@ -512,7 +531,6 @@ function resetTerminal() {
     correctStageCount = 0;
     startTime = Date.now();
     
-    // iPad名は再入力させずそのままスタート画面に戻る
     startClientMode();
 }
 
@@ -549,7 +567,6 @@ function refreshAdminUI() {
         const elapsedMin = Math.floor(elapsedSecTotal / 60);
         const elapsedSec = elapsedSecTotal % 60;
 
-        // 進行状況の日本語表示生成
         let progressJapanese = '未開始';
         if (dev.stage > 0 && dev.stage <= 12) {
             progressJapanese = `ステージ ${dev.stage} / 12`;
