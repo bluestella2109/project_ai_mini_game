@@ -1,105 +1,73 @@
 :root {
-    --primary: #00f2ff;
-    --accent: #ff0055;
-    --bg: #000814;
-    --panel: rgba(0, 30, 60, 0.6);
-    --grid-size: 40px;
+    --cyan: #00f2ff;
+    --red: #ff003c;
+    --bg: #00050a;
+    --panel: rgba(0, 20, 40, 0.8);
+    --font-tech: 'Orbitron', sans-serif;
 }
 
-body, html {
-    margin: 0; padding: 0;
+body {
     background: var(--bg);
-    color: var(--primary);
-    font-family: 'Segoe UI', sans-serif;
-    overflow: hidden;
-    height: 100%;
+    color: var(--cyan);
+    font-family: 'Noto Sans JP', sans-serif;
+    margin: 0; overflow: hidden;
+    height: 100vh;
 }
 
-/* 背景グリッド & キャンバス */
-#bg-canvas {
-    position: fixed; top: 0; left: 0; z-index: -1;
+/* 背景演出 */
+.bg-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
+.grid-overlay {
+    position: absolute; width: 200%; height: 200%;
+    background-image: linear-gradient(var(--cyan) 1px, transparent 1px), linear-gradient(90deg, var(--cyan) 1px, transparent 1px);
+    background-size: 50px 50px;
+    opacity: 0.1;
+    transform: perspective(500px) rotateX(60deg);
+    animation: grid-move 20s linear infinite;
+}
+@keyframes grid-move { from { transform: perspective(500px) rotateX(60deg) translateY(0); } to { transform: perspective(500px) rotateX(60deg) translateY(50px); } }
+
+.scanlines {
+    position: absolute; width: 100%; height: 100%;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+    background-size: 100% 4px, 3px 100%; z-index: 10; pointer-events: none;
 }
 
-#app {
-    display: flex; align-items: center; justify-content: center;
-    height: 100vh; position: relative;
-}
-
-.screen {
-    display: none; width: 100%; max-width: 900px;
-    flex-direction: column; align-items: center;
-}
-
+/* UIパーツ */
+.screen { display: none; width: 100vw; height: 100vh; flex-direction: column; align-items: center; justify-content: center; }
 .active { display: flex; }
 
-/* MISSION START ボタン */
-.start-circle-outer {
-    width: 280px; height: 280px;
-    border-radius: 50%;
-    border: 2px solid var(--primary);
-    display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 0 30px rgba(0, 242, 255, 0.4);
-    cursor: pointer; transition: 0.3s;
-    animation: pulse 2s infinite;
+.frame { border: 2px solid var(--cyan); padding: 40px; background: var(--panel); box-shadow: 0 0 20px var(--cyan); clip-path: polygon(0 0, 90% 0, 100% 10%, 100% 100%, 10% 100%, 0 90%); }
+
+.cyber-btn {
+    background: transparent; border: 1px solid var(--cyan); color: var(--cyan);
+    padding: 15px 40px; font-family: var(--font-tech); cursor: pointer;
+    position: relative; overflow: hidden; transition: 0.3s; margin: 10px;
+}
+.cyber-btn:hover { background: var(--cyan); color: var(--bg); box-shadow: 0 0 30px var(--cyan); }
+
+/* ゲーム内パーツ */
+.node-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 80%; }
+.node-item {
+    border: 1px solid var(--cyan); padding: 20px; text-align: center;
+    background: rgba(0, 242, 255, 0.1); cursor: pointer; transition: 0.2s;
+}
+.node-item.correct { background: var(--cyan); color: var(--bg); }
+.node-item.wrong { background: var(--red); color: white; border-color: var(--red); }
+
+/* 反応テストのデカいボタン */
+.reflex-trigger {
+    width: 250px; height: 250px; border-radius: 50%; border: 10px solid var(--cyan);
+    display: flex; align-items: center; justify-content: center; font-size: 2rem;
+    cursor: pointer; transition: 0.1s;
 }
 
-.start-circle-inner {
-    width: 240px; height: 240px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(0,242,255,0.2) 0%, transparent 70%);
-    border: 4px solid var(--primary);
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    font-weight: bold; font-size: 1.2rem;
-}
+/* アラート */
+.alert-box { background: rgba(255, 0, 60, 0.2); border: 4px solid var(--red); padding: 40px; text-align: center; animation: alert-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+@keyframes alert-in { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.critical { color: var(--red); font-size: 3rem; text-shadow: 0 0 20px var(--red); font-family: var(--font-tech); }
+.blink-text { animation: blink 0.5s infinite; }
+@keyframes blink { 50% { opacity: 0; } }
 
-@keyframes pulse {
-    0% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.05); opacity: 0.8; }
-    100% { transform: scale(1); opacity: 1; }
-}
-
-/* HUD */
-.game-hud {
-    width: 90%; display: flex; justify-content: space-between;
-    border: 1px solid var(--primary);
-    padding: 10px 20px; background: var(--panel);
-    box-shadow: inset 0 0 15px rgba(0, 242, 255, 0.2);
-    margin-bottom: 30px;
-}
-
-/* 管理者画面カード */
-.admin-grid {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 20px; width: 95%; overflow-y: auto; max-height: 80vh;
-}
-
-.device-card {
-    background: var(--panel); border: 1px solid var(--primary);
-    padding: 15px; border-radius: 4px;
-}
-
-.status-online { color: #00ffaa; font-weight: bold; }
-
-/* アラート演出 */
-.alert-screen-active {
-    animation: alert-flash 0.3s infinite;
-}
-
-@keyframes alert-flash {
-    0% { background: #600; }
-    50% { background: #000; }
-    100% { background: #600; }
-}
-
-/* 共通パーツ: グリッド内のノード */
-.node-grid {
-    display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;
-}
-
-.node-btn {
-    border: 1px solid var(--primary); padding: 20px;
-    background: rgba(0, 242, 255, 0.1); color: var(--primary);
-    cursor: pointer; text-align: center; font-size: 1.2rem;
-}
-
-.node-btn.active { background: var(--primary); color: #000; }
+/* 管理者カード */
+.admin-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; width: 90%; }
+.card { border: 1px solid var(--cyan); background: rgba(0, 30, 60, 0.6); padding: 15px; border-left: 5px solid var(--cyan); }
