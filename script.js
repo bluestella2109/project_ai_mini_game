@@ -3,12 +3,12 @@
 // ※ ご自身の Firebase コンソールの設定値に置き換えてください
 // ==========================================
 const firebaseConfig = {
-    apiKey: "AIzaSyAIRFvaF397DOiNARhoG6B7w-xdT7bGNFk",
-    authDomain: "sf-minigame.firebaseapp.com",
-    projectId: "sf-minigame",
-    storageBucket: "sf-minigame.firebasestorage.app",
-    messagingSenderId: "751927738343",
-    appId: "1:751927738343:web:91d5911881454d7c414742"
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
 };
 
 // Firebaseの初期化
@@ -167,6 +167,11 @@ function goToModeSelection() {
 function openAdminFromStart() {
     setupAdminFirebaseListener();
     showAdminScreen();
+}
+
+// リトライ用の処理（スタート画面に戻る）
+function resetToStart() {
+    showScreen('screen-start');
 }
 
 function startGame() {
